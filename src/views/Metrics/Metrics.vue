@@ -40,8 +40,8 @@
 <script setup>
 import axios from "axios"
 import { ref, watch, computed } from 'vue'
-import PerformanceTab from './PerformanceTab.vue'
-import SubaffiliateSummaryTab from './SubaffiliateSummaryTab.vue'
+import PerformanceTab from './PerformanceTab/PerformanceTab.vue'
+import SubaffiliateSummaryTab from './SubaffiliateSummaryTab/SubaffiliateSummaryTab.vue'
 
 // Tab Control
 const activeTab = ref('performance')

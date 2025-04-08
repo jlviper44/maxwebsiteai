@@ -1,6 +1,6 @@
 <template>
   <div>
-    <!-- Date range selection -->
+    <!-- Date range and Sub ID selection -->
     <div class="date-filters mb-6">
       <v-card class="pa-4 date-card no-border" elevation="0">
         <div class="d-flex flex-wrap align-center justify-space-between">
@@ -46,6 +46,26 @@
             </v-btn>
           </div>
         </div>
+        
+        <!-- Sub ID Filter -->
+        <div class="mt-4">
+          <v-autocomplete
+            v-model="selectedSubId"
+            :items="availableSubIds"
+            label="Filter by Sub ID"
+            clearable
+            placeholder="All Sub IDs"
+            density="comfortable"
+            variant="outlined"
+            hide-details
+            class="max-w-md"
+            @update:model-value="filterBySubId"
+          >
+            <template v-slot:prepend-inner>
+              <v-icon>mdi-filter-variant</v-icon>
+            </template>
+          </v-autocomplete>
+        </div>
       </v-card>
     </div>
     
@@ -68,47 +88,42 @@
       {{ subaffiliateSummaryError }}
     </v-alert>
     
-    <!-- Date range info when data is loaded -->
-    <div v-if="!loadingSubaffiliateSummary && combinedData.length > 0" class="mb-4">
-      <v-alert type="info" density="compact">
-        <strong>Data Range:</strong> {{ formatDate(startDateLocal) }} to {{ formatDate(endDateLocal) }} 
-        ({{ totalDays }} {{ totalDays === 1 ? 'day' : 'days' }})
-      </v-alert>
+    <!-- Chart Section -->
+    <div class="mb-6">
+      <v-card class="pa-4">
+        <h3 class="text-h6 mb-4">Subaffiliate Metrics Trend</h3>
+        <SubaffiliateLineChart
+          :data="displayData"
+          :start-date="startDateLocal"
+          :end-date="endDateLocal"
+        />
+      </v-card>
     </div>
     
-    <!-- Subaffiliate Summary Data table -->
-    <v-data-table
-      v-if="!loadingSubaffiliateSummary && combinedData.length > 0"
-      :headers="subaffiliateSummaryHeaders"
-      :items="combinedData"
-      :items-per-page="10"
-      :footer-props="{
-        'items-per-page-options': [10, 20, 50, 100]
-      }"
-      class="elevation-1"
-    >
-      <!-- Custom formatting for date column -->
-      <template v-slot:item.fetched_date="{ item }">
-        {{ formatDate(new Date(item.fetched_date)) }}
-      </template>
-    </v-data-table>
-    
-    <!-- No data message -->
-    <v-alert
-      v-if="!loadingSubaffiliateSummary && combinedData.length === 0 && !subaffiliateSummaryError"
-      type="info"
-      class="my-4"
-    >
-      No subaffiliate summary data available for the selected period.
-    </v-alert>
+    <!-- Table Section -->
+    <div>
+      <v-card class="pa-4">
+        <h3 class="text-h6 mb-4">Subaffiliate Data</h3>
+        <SubaffiliateSummaryTable
+          :data="displayData"
+          :loading="loadingSubaffiliateSummary"
+          :error="subaffiliateSummaryError"
+          :start-date="startDateLocal"
+          :end-date="endDateLocal"
+          :format-date="formatDate"
+        />
+      </v-card>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import Datepicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import axios from 'axios'
+import SubaffiliateSummaryTable from './Components/SubaffiliateSummaryTable.vue'
+import SubaffiliateLineChart from './Components/SubaffiliateChartComponent.vue'
 
 // Define emits
 const emit = defineEmits(['date-range-change'])
@@ -125,6 +140,8 @@ const props = defineProps({
 const startDateLocal = ref(null)
 const endDateLocal = ref(null)
 const combinedData = ref([])
+const filteredData = ref([])
+const selectedSubId = ref(null)
 const localLoadingState = ref(false)
 const localErrorState = ref(null)
 const processedDays = ref(0)
@@ -141,6 +158,48 @@ const subaffiliateSummaryError = computed(() => {
   return localErrorState.value
 })
 
+// Computed property to get unique Sub IDs from data
+const availableSubIds = computed(() => {
+  if (!combinedData.value || combinedData.value.length === 0) return []
+  
+  const subIds = [...new Set(combinedData.value.map(item => item.sub_id))]
+  return subIds.sort()
+})
+
+// Computed property to get final data to display (either filtered or all)
+const displayData = computed(() => {
+  if (selectedSubId.value && filteredData.value.length > 0) {
+    return filteredData.value;
+  }
+  return combinedData.value;
+})
+
+// Filter data by Sub ID
+const filterBySubId = () => {
+  if (!selectedSubId.value) {
+    // If no Sub ID is selected, show all data
+    filteredData.value = [];
+    return;
+  }
+  
+  // Filter the combined data by the selected Sub ID
+  filteredData.value = [...combinedData.value.filter(item => 
+    item.sub_id === selectedSubId.value
+  )];
+}
+
+// Watch for changes in the selected Sub ID
+watch(selectedSubId, () => {
+  filterBySubId();
+});
+
+// Watch for changes in combined data to update filtered data if needed
+watch(combinedData, () => {
+  if (selectedSubId.value) {
+    filterBySubId();
+  }
+}, { deep: true });
+
 // Set default dates (today minus 7 days to today)
 onMounted(() => {
   const today = new Date()
@@ -150,6 +209,12 @@ onMounted(() => {
   // Set default date range
   startDateLocal.value = sevenDaysAgo
   endDateLocal.value = today
+  
+  // Fetch data automatically on mount with a slight delay
+  // to ensure all components are properly mounted
+  setTimeout(() => {
+    applyDateFilter()
+  }, 100)
 })
 
 // Handle start date change
@@ -290,8 +355,10 @@ const applyDateFilter = async () => {
   processedDays.value = 0
   pendingRequests.value = dateRange.length
   
-  // Clear previous data and error
+  // Clear previous data, filtered data, and error
   combinedData.value = []
+  filteredData.value = []
+  selectedSubId.value = null
   localErrorState.value = null
   
   // Set loading state
@@ -333,42 +400,6 @@ const applyDateFilter = async () => {
     localLoadingState.value = false
   }
 }
-
-// Table headers for subaffiliate summary
-const subaffiliateSummaryHeaders = ref([
-  { title: 'Date', key: 'fetched_date', sortable: true },
-  { title: 'Sub ID', key: 'sub_id', sortable: true },
-  { title: 'Clicks', key: 'clicks', sortable: true },
-  { title: 'Conversions', key: 'conversions', sortable: true },
-  { title: 'Revenue', key: 'revenue', sortable: true },
-  { title: 'EPC', key: 'epc', sortable: true },
-  { title: 'Events', key: 'events', sortable: true }
-])
-
-// Update headers based on actual data structure when data is loaded
-watch(() => combinedData.value, (newData) => {
-  if (newData && newData.length > 0) {
-    const sampleItem = newData[0]
-    
-    // Make sure fetched_date is always first
-    const updatedHeaders = [
-      { title: 'Date', key: 'fetched_date', sortable: true }
-    ]
-    
-    // Add all other keys (except fetched_date which we already added)
-    Object.keys(sampleItem)
-      .filter(key => key !== 'fetched_date')
-      .forEach(key => {
-        updatedHeaders.push({
-          title: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
-          key: key,
-          sortable: true
-        })
-      })
-    
-    subaffiliateSummaryHeaders.value = updatedHeaders
-  }
-}, { immediate: true })
 </script>
 
 <style scoped>
@@ -429,6 +460,11 @@ watch(() => combinedData.value, (newData) => {
 
 :deep(.dp__calendar) {
   background-color: white !important;
+}
+
+/* Max width for autocomplete */
+.max-w-md {
+  max-width: 400px;
 }
 
 /* Responsive adjustments */
