@@ -1,4 +1,4 @@
-import { handleClicksRequest } from './affluentEndpoint.js';
+import { handleClicksRequest, handleConversionsRequest, handleSubaffiliateSummaryRequest } from './affluentEndpoint.js';
 
 export default {
 	async fetch(request) {
@@ -7,6 +7,15 @@ export default {
 		// Handle Affluent API clicks endpoint
 		if (url.pathname === '/api/clicks') {
 			return handleClicksRequest(request);
+		}
+		
+		// Handle Affluent API conversions endpoint
+		if (url.pathname === '/api/conversions') {
+			return handleConversionsRequest(request);
+		}
+
+    if (url.pathname === '/api/subaffiliatesummary') {
+			return handleSubaffiliateSummaryRequest(request);
 		}
 		
 		// Original API endpoint

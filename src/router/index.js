@@ -13,7 +13,7 @@ const router = createRouter({
       path: '/metrics',
       name: 'metrics',
       // Lazy load this route
-      component: () => import('../views/Metrics.vue')
+      component: () => import('../views/Metrics/Metrics.vue')
     },
     {
       path: '/settings',
