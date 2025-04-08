@@ -2,53 +2,6 @@
   <div>
     <h1 class="text-h4 mb-4">Metrics & Analytics</h1>
     
-    <!-- Date range selection -->
-    <div class="date-filters mb-6">
-      <v-card class="pa-4 date-card no-border" elevation="0">
-        <div class="d-flex flex-wrap align-center">
-          <div class="me-4 mb-2 date-picker-container">
-            <label class="text-body-1 mb-1 d-block">Start Date</label>
-            <Datepicker 
-              v-model="startDate" 
-              :max-date="endDate || new Date()"
-              auto-apply
-              :enable-time-picker="false"
-              text-input
-              placeholder="Select start date"
-              :format="formatDateForDisplay"
-              position="bottom"
-            />
-          </div>
-          
-          <div class="me-4 mb-2 date-picker-container">
-            <label class="text-body-1 mb-1 d-block">End Date</label>
-            <Datepicker 
-              v-model="endDate" 
-              :min-date="startDate"
-              :max-date="new Date()"
-              auto-apply
-              :enable-time-picker="false"
-              text-input
-              placeholder="Select end date"
-              :format="formatDateForDisplay"
-              position="bottom"
-            />
-          </div>
-          
-          <div class="mb-2 mt-4">
-            <v-btn 
-              color="primary" 
-              :loading="loading"
-              :disabled="!startDate || !endDate"
-              @click="fetchAllData"
-            >
-              Apply Filters
-            </v-btn>
-          </div>
-        </div>
-      </v-card>
-    </div>
-    
     <!-- Tabs for Performance and Subaffiliate Summary -->
     <v-tabs v-model="activeTab" class="mb-4" color="primary">
       <v-tab value="performance">Performance</v-tab>
@@ -66,15 +19,18 @@
           :clicksError="clicksError"
           :conversionsError="conversionsError"
           :formatDateAndTime="formatDateAndTime"
+          :startDate="startDate"
+          :endDate="endDate"
+          :formatDateForDisplay="formatDateForDisplay"
+          @date-change="onDateChange"
+          @fetch-data="fetchAllData"
         />
       </v-window-item>
       
       <v-window-item value="subaffiliatesummary">
         <SubaffiliateSummaryTab 
-          :subaffiliateSummaryData="subaffiliateSummaryData"
-          :loadingSubaffiliateSummary="loadingSubaffiliateSummary"
-          :subaffiliateSummaryError="subaffiliateSummaryError"
           :formatDate="formatDate"
+          @date-range-change="onSubaffiliateRangeChange"
         />
       </v-window-item>
     </v-window>
@@ -84,8 +40,6 @@
 <script setup>
 import axios from "axios"
 import { ref, watch, computed } from 'vue'
-import Datepicker from '@vuepic/vue-datepicker'
-import '@vuepic/vue-datepicker/dist/main.css'
 import PerformanceTab from './PerformanceTab.vue'
 import SubaffiliateSummaryTab from './SubaffiliateSummaryTab.vue'
 
@@ -95,38 +49,80 @@ const activeTab = ref('performance')
 // Data
 const clicksData = ref([])
 const conversionsData = ref([])
-const subaffiliateSummaryData = ref([])
 
-// Separate loading states for each data type
+// Separate loading states for performance data
 const loadingClicks = ref(false)
 const loadingConversions = ref(false)
-const loadingSubaffiliateSummary = ref(false)
 
 // Computed property for overall loading state
 const loading = computed(() => {
-  return loadingClicks.value || loadingConversions.value || loadingSubaffiliateSummary.value
+  return loadingClicks.value || loadingConversions.value
 })
 
-// Separate error states for each data type
+// Separate error states for performance data
 const clicksError = ref(null)
 const conversionsError = ref(null)
-const subaffiliateSummaryError = ref(null)
 
+// Date states for performance tab
 const startDate = ref(null)
 const endDate = ref(null)
 
-// Set default date range (yesterday to today)
-const today = new Date()
-endDate.value = today
+// Date states for subaffiliate tab (maintained for backward compatibility)
+const subaffiliateStartDate = ref(null)
+const subaffiliateEndDate = ref(null)
 
-const yesterday = new Date()
-yesterday.setDate(today.getDate() - 1)
-startDate.value = yesterday
+// Set default date to today
+const today = new Date()
+
+// Set initial start and end dates to today
+startDate.value = new Date(today)
+startDate.value.setHours(0, 0, 0, 0)
+endDate.value = new Date(today)
+endDate.value.setHours(23, 59, 59, 999)
+
+// Set initial subaffiliate date range to last 7 days
+subaffiliateStartDate.value = new Date(today)
+subaffiliateStartDate.value.setDate(today.getDate() - 7)
+subaffiliateStartDate.value.setHours(0, 0, 0, 0)
+subaffiliateEndDate.value = new Date(today)
+subaffiliateEndDate.value.setHours(23, 59, 59, 999)
+
+// Handle date change for performance tab
+const onDateChange = (dates) => {
+  if (dates) {
+    startDate.value = dates.startDate
+    endDate.value = dates.endDate
+    
+    console.log('Performance date changed:', {
+      startDate: startDate.value,
+      endDate: endDate.value
+    })
+  }
+}
+
+// Handle date range change for subaffiliate tab
+const onSubaffiliateRangeChange = (dates) => {
+  if (dates) {
+    subaffiliateStartDate.value = dates.startDate
+    subaffiliateEndDate.value = dates.endDate
+    
+    console.log('Subaffiliate date range changed:', {
+      startDate: subaffiliateStartDate.value,
+      endDate: subaffiliateEndDate.value
+    })
+  }
+}
 
 // Date formatters
 const formatDate = (dateString) => {
   if (!dateString) return ''
   const date = new Date(dateString)
+  return date.toLocaleDateString()
+}
+
+// Format for display in the date picker
+const formatDateForDisplay = (date) => {
+  if (!date) return ''
   return date.toLocaleDateString()
 }
 
@@ -162,11 +158,6 @@ const formatDateForApi = (date, isEndDate = false) => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
-// Format for display in the datepicker
-const formatDateForDisplay = (date) => {
-  return date.toLocaleDateString()
-}
-
 // Define field arrays for each data type
 const clicksFields = [
   'click_date',
@@ -179,15 +170,6 @@ const conversionsFields = [
   'offer_name',
   'subid_1',
   'price'
-]
-
-const subaffiliateSummaryFields = [
-  'sub_id',
-  'clicks',
-  'conversions',
-  'revenue',
-  'epc',
-  'events'
 ]
 
 // Function to prepare common request parameters
@@ -253,56 +235,26 @@ const fetchConversionsData = async () => {
   }
 }
 
-// Function to fetch subaffiliate summary data
-const fetchSubaffiliateSummaryData = async () => {
-  if (!startDate.value || !endDate.value) return
-  
-  try {
-    loadingSubaffiliateSummary.value = true
-    subaffiliateSummaryError.value = null
-    
-    const response = await axios.post("/api/subaffiliatesummary", getRequestParams(subaffiliateSummaryFields))
-    
-    // Process subaffiliate summary data
-    if (response.data && Array.isArray(response.data.data)) {
-      subaffiliateSummaryData.value = response.data.data
-    } else if (response.data && typeof response.data === 'object') {
-      subaffiliateSummaryData.value = Array.isArray(response.data) ? response.data : [response.data]
-    }
-    
-    console.log('Subaffiliate Summary API Response:', response)
-  } catch (err) {
-    console.error(`Error fetching subaffiliate summary data:`, err)
-    subaffiliateSummaryError.value = err.response?.data?.error || err.message || `Failed to fetch subaffiliate summary data`
-  } finally {
-    loadingSubaffiliateSummary.value = false
-  }
-}
-
-// Function to fetch all data types concurrently
+// Function to fetch performance data
 const fetchAllData = () => {
   if (!startDate.value || !endDate.value) {
-    // Set all error states to show the same message
+    // Set performance error states to show the same message
     clicksError.value = "Please select both start and end dates"
     conversionsError.value = "Please select both start and end dates"
-    subaffiliateSummaryError.value = "Please select both start and end dates"
     return
   }
   
   // Clear previous data
   clicksData.value = []
   conversionsData.value = []
-  subaffiliateSummaryData.value = []
   
   // Clear previous errors
   clicksError.value = null
   conversionsError.value = null
-  subaffiliateSummaryError.value = null
   
-  // Fetch all three data types concurrently and independently
+  // Fetch performance data types concurrently and independently
   fetchClicksData()
   fetchConversionsData()
-  fetchSubaffiliateSummaryData()
 }
 
 // Fetch data when the component is mounted
@@ -318,52 +270,10 @@ watch(activeTab, (newTab) => {
     if (conversionsData.value.length === 0 && !loadingConversions.value && !conversionsError.value) {
       fetchConversionsData()
     }
-  } else if (newTab === 'subaffiliatesummary' && subaffiliateSummaryData.value.length === 0 && !loadingSubaffiliateSummary.value && !subaffiliateSummaryError.value) {
-    fetchSubaffiliateSummaryData()
   }
 })
 </script>
 
 <style scoped>
-/* Date picker container and positioning fixes */
-.date-card {
-  overflow: visible !important;
-  position: relative;
-  z-index: 1;
-}
-
-/* Remove card border */
-.no-border {
-  border: none !important;
-  box-shadow: none !important;
-}
-
-.date-picker-container {
-  position: relative;
-  z-index: 2;
-}
-
-/* Fix for date picker z-index issue */
-:deep(.dp__outer_menu) {
-  z-index: 100 !important;
-}
-
-:deep(.dp__menu) {
-  z-index: 100 !important;
-}
-
-:deep(.dp__overlay) {
-  z-index: 100 !important;
-}
-
-/* Make sure the date picker input doesn't get clipped */
-:deep(.dp__input) {
-  z-index: 2;
-}
-
-/* Ensure the date picker popup has enough space */
-:deep(.dp__instance_calendar) {
-  position: absolute;
-  margin-top: 0;
-}
+/* Component-specific styles (if needed) */
 </style>
