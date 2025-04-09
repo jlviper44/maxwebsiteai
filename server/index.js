@@ -1,9 +1,14 @@
 import { handleClicksRequest, handleConversionsRequest, handleSubaffiliateSummaryRequest } from './affluentEndpoint.js';
-import { handleSQLRequest, handleRawSQLRequest } from './SQL.js';
+import { handleSQLRequest, handleRawSQLRequest, handleOptions } from './SQL.js';
 
 export default {
 	async fetch(request, env) {
 		const url = new URL(request.url);
+		
+		// Handle CORS preflight requests
+		if (request.method === 'OPTIONS') {
+			return handleOptions();
+		}
 
 		// Handle Affluent API clicks endpoint
 		if (url.pathname === '/api/clicks') {

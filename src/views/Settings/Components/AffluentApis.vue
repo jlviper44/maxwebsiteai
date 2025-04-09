@@ -143,21 +143,11 @@ const dialog = ref({
 // API URL base
 const API_BASE_URL = '/api/sql'
 
-// Authentication token - in a real app, you'd fetch this from your auth system
-const getAuthToken = () => {
-  // Replace with your actual auth token retrieval logic
-  return 'your-auth-token'
-}
-
 // Fetch API configurations from the server
 const fetchApiConfigurations = async () => {
   loading.value = true
   try {
-    const response = await fetch(`${API_BASE_URL}/FluentAPIs`, {
-      headers: {
-        'Authorization': `Bearer ${getAuthToken()}`
-      }
-    })
+    const response = await fetch(`${API_BASE_URL}/FluentAPIs`)
     
     if (!response.ok) {
       throw new Error(`Failed to fetch data: ${response.status}`)
@@ -215,8 +205,7 @@ const saveApiConfig = async () => {
       response = await fetch(`${API_BASE_URL}/FluentAPIs/${originalName.value}?idColumn=Name`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(apiConfig.value)
       })
@@ -225,8 +214,7 @@ const saveApiConfig = async () => {
       response = await fetch(`${API_BASE_URL}/FluentAPIs`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(apiConfig.value)
       })
@@ -263,10 +251,7 @@ const deleteApi = async (api) => {
   if (confirm(`Are you sure you want to delete the "${api.Name}" configuration? This action cannot be undone.`)) {
     try {
       const response = await fetch(`${API_BASE_URL}/FluentAPIs/${api.Name}?idColumn=Name`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
-        }
+        method: 'DELETE'
       })
       
       if (!response.ok) {

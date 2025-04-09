@@ -1,9 +1,7 @@
-// SQL.js - CRUD operations for Cloudflare Workers with D1QB
-
-import { D1QB } from 'workers-qb';
+// SQL.js - CRUD operations for Cloudflare Workers with direct D1 API
 
 /**
- * Execute a raw SQL query using D1QB
+ * Execute a raw SQL query
  * @param {D1Database} db - The D1 database instance
  * @param {string} query - SQL query to execute
  * @param {Array} params - Parameters for the query
@@ -11,20 +9,15 @@ import { D1QB } from 'workers-qb';
  */
 async function executeQuery(db, query, params = []) {
   try {
-    const qb = new D1QB(db);
-    const statement = qb.prepare(query);
-    
-    if (params && params.length > 0) {
-      statement.bind(...params);
-    }
-    
-    const result = await statement.all();
+    console.log(`Executing query: ${query} with params:`, params);
+    const result = await db.prepare(query).bind(...params).all();
     return {
       success: true,
       data: result.results,
       meta: result.meta
     };
   } catch (error) {
+    console.error('SQL Execute Query Error:', error);
     return {
       success: false,
       error: error.message
@@ -33,24 +26,24 @@ async function executeQuery(db, query, params = []) {
 }
 
 /**
- * Get all records from a table using D1QB
+ * Get all records from a table
  * @param {D1Database} db - The D1 database instance
  * @param {string} tableName - Name of the table
  * @returns {Promise<Object>} - Query result with all records
  */
 async function getAll(db, tableName) {
   try {
-    const qb = new D1QB(db);
-    const result = await qb.select('*')
-      .from(tableName)
-      .all();
-    
+    console.log(`Getting all records from table: ${tableName}`);
+    // Removed square brackets around table name
+    const query = `SELECT * FROM ${tableName}`;
+    const result = await db.prepare(query).all();
     return {
       success: true,
       data: result.results,
       meta: result.meta
     };
   } catch (error) {
+    console.error('SQL GetAll Error:', error);
     return {
       success: false,
       error: error.message
@@ -59,7 +52,7 @@ async function getAll(db, tableName) {
 }
 
 /**
- * Get a single record by ID using D1QB
+ * Get a single record by ID
  * @param {D1Database} db - The D1 database instance
  * @param {string} tableName - Name of the table
  * @param {string} idColumn - Name of the ID column
@@ -68,18 +61,17 @@ async function getAll(db, tableName) {
  */
 async function getById(db, tableName, idColumn, id) {
   try {
-    const qb = new D1QB(db);
-    const result = await qb.select('*')
-      .from(tableName)
-      .where(idColumn, '=', id)
-      .first();
-    
+    console.log(`Getting record from ${tableName} where ${idColumn} = ${id}`);
+    // Removed square brackets around table name
+    const query = `SELECT * FROM ${tableName} WHERE ${idColumn} = ?`;
+    const result = await db.prepare(query).bind(id).all();
     return {
       success: true,
-      data: result ? [result] : [],
-      meta: {}
+      data: result.results,
+      meta: result.meta
     };
   } catch (error) {
+    console.error('SQL GetById Error:', error);
     return {
       success: false,
       error: error.message
@@ -88,7 +80,7 @@ async function getById(db, tableName, idColumn, id) {
 }
 
 /**
- * Insert a new record using D1QB
+ * Insert a new record
  * @param {D1Database} db - The D1 database instance
  * @param {string} tableName - Name of the table
  * @param {Object} data - Record data as key-value pairs
@@ -96,17 +88,22 @@ async function getById(db, tableName, idColumn, id) {
  */
 async function insert(db, tableName, data) {
   try {
-    const qb = new D1QB(db);
-    const result = await qb.insert(data)
-      .into(tableName)
-      .execute();
+    console.log(`Inserting into ${tableName}:`, data);
+    const columns = Object.keys(data);
+    const values = Object.values(data);
+    const placeholders = Array(values.length).fill('?').join(', ');
+    
+    // Removed square brackets around table name
+    const query = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`;
+    const result = await db.prepare(query).bind(...values).run();
     
     return {
       success: true,
       data: [data],
-      meta: result
+      meta: result.meta
     };
   } catch (error) {
+    console.error('SQL Insert Error:', error);
     return {
       success: false,
       error: error.message
@@ -115,7 +112,7 @@ async function insert(db, tableName, data) {
 }
 
 /**
- * Update an existing record using D1QB
+ * Update an existing record
  * @param {D1Database} db - The D1 database instance
  * @param {string} tableName - Name of the table
  * @param {string} idColumn - Name of the ID column
@@ -125,18 +122,23 @@ async function insert(db, tableName, data) {
  */
 async function update(db, tableName, idColumn, id, data) {
   try {
-    const qb = new D1QB(db);
-    const result = await qb.update(tableName)
-      .set(data)
-      .where(idColumn, '=', id)
-      .execute();
+    console.log(`Updating ${tableName} where ${idColumn} = ${id}:`, data);
+    const setClause = Object.keys(data)
+      .map(key => `${key} = ?`)
+      .join(', ');
+    const values = [...Object.values(data), id];
+    
+    // Removed square brackets around table name
+    const query = `UPDATE ${tableName} SET ${setClause} WHERE ${idColumn} = ?`;
+    const result = await db.prepare(query).bind(...values).run();
     
     return {
       success: true,
       data: [data],
-      meta: result
+      meta: result.meta
     };
   } catch (error) {
+    console.error('SQL Update Error:', error);
     return {
       success: false,
       error: error.message
@@ -145,7 +147,7 @@ async function update(db, tableName, idColumn, id, data) {
 }
 
 /**
- * Delete a record using D1QB
+ * Delete a record
  * @param {D1Database} db - The D1 database instance
  * @param {string} tableName - Name of the table
  * @param {string} idColumn - Name of the ID column
@@ -154,18 +156,18 @@ async function update(db, tableName, idColumn, id, data) {
  */
 async function deleteRecord(db, tableName, idColumn, id) {
   try {
-    const qb = new D1QB(db);
-    const result = await qb.delete()
-      .from(tableName)
-      .where(idColumn, '=', id)
-      .execute();
+    console.log(`Deleting from ${tableName} where ${idColumn} = ${id}`);
+    // Removed square brackets around table name
+    const query = `DELETE FROM ${tableName} WHERE ${idColumn} = ?`;
+    const result = await db.prepare(query).bind(id).run();
     
     return {
       success: true,
       data: [],
-      meta: result
+      meta: result.meta
     };
   } catch (error) {
+    console.error('SQL Delete Error:', error);
     return {
       success: false,
       error: error.message
@@ -190,15 +192,8 @@ async function handleSQLRequest(request, db) {
   const table = pathParts[2]; // /api/sql/tableName/[id]
   const id = pathParts[3];
   
-  // Check for authentication
-  // This is a basic check - you should implement proper authentication
-  const authorization = request.headers.get('Authorization');
-  if (!authorization || !authorization.startsWith('Bearer ')) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
+  console.log(`SQL Request: ${method} ${url.pathname}`);
+  console.log(`Table: ${table}, ID: ${id}`);
   
   try {
     let result;
@@ -254,12 +249,30 @@ async function handleSQLRequest(request, db) {
     // Return response
     return new Response(JSON.stringify(result), {
       status: result.success ? 200 : 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('SQL Request Handler Error:', error);
+    return new Response(JSON.stringify({ 
+      error: error.message, 
+      stack: error.stack,
+      url: url.pathname,
+      method: method,
+      table: table,
+      id: id
+    }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      }
     });
   }
 }
@@ -287,19 +300,47 @@ async function handleRawSQLRequest(request, db) {
     
     return new Response(JSON.stringify(result), {
       status: result.success ? 200 : 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Raw SQL Request Handler Error:', error);
+    return new Response(JSON.stringify({ error: error.message, stack: error.stack }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      }
     });
   }
+}
+
+/**
+ * Handle CORS preflight requests
+ * @returns {Response} - CORS preflight response
+ */
+function handleOptions() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    }
+  });
 }
 
 export { 
   handleSQLRequest, 
   handleRawSQLRequest,
+  handleOptions,
   executeQuery,
   getAll,
   getById,
