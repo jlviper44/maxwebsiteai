@@ -1,7 +1,8 @@
 import { handleClicksRequest, handleConversionsRequest, handleSubaffiliateSummaryRequest } from './affluentEndpoint.js';
+import { handleSQLRequest, handleRawSQLRequest } from './SQL.js';
 
 export default {
-	async fetch(request) {
+	async fetch(request, env) {
 		const url = new URL(request.url);
 
 		// Handle Affluent API clicks endpoint
@@ -14,8 +15,18 @@ export default {
 			return handleConversionsRequest(request);
 		}
 
-    if (url.pathname === '/api/subaffiliatesummary') {
+		if (url.pathname === '/api/subaffiliatesummary') {
 			return handleSubaffiliateSummaryRequest(request);
+		}
+		
+		// Handle SQL CRUD operations
+		if (url.pathname.startsWith('/api/sql/')) {
+			return handleSQLRequest(request, env.DB);
+		}
+		
+		// Handle raw SQL queries
+		if (url.pathname === '/api/rawsql') {
+			return handleRawSQLRequest(request, env.DB);
 		}
 		
 		// Original API endpoint

@@ -125,17 +125,6 @@ import axios from 'axios'
 import SubaffiliateSummaryTable from './Components/SubaffiliateSummaryTable.vue'
 import SubaffiliateLineChart from './Components/SubaffiliateChartComponent.vue'
 
-// Define emits
-const emit = defineEmits(['date-range-change'])
-
-// Props from parent component
-const props = defineProps({
-  formatDate: {
-    type: Function,
-    required: true
-  }
-})
-
 // Local state variables
 const startDateLocal = ref(null)
 const endDateLocal = ref(null)
@@ -147,6 +136,13 @@ const localErrorState = ref(null)
 const processedDays = ref(0)
 const totalDays = ref(0)
 const pendingRequests = ref(0) // Track pending requests
+
+// Define formatDate function internally instead of receiving as prop
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString()
+}
 
 // Computed property for loading state
 const loadingSubaffiliateSummary = computed(() => {
@@ -342,12 +338,6 @@ const fetchDayData = async (date) => {
 // Apply date filter and fetch data
 const applyDateFilter = async () => {
   if (!startDateLocal.value || !endDateLocal.value) return
-  
-  // Emit the date range change event
-  emit('date-range-change', {
-    startDate: startDateLocal.value,
-    endDate: endDateLocal.value
-  })
   
   // Get all dates in range
   const dateRange = getDatesInRange(startDateLocal.value, endDateLocal.value)

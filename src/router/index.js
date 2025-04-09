@@ -19,7 +19,7 @@ const router = createRouter({
       path: '/settings',
       name: 'settings',
       // Lazy load this route
-      component: () => import('../views/Settings.vue')
+      component: () => import('../views/Settings/Settings.vue')
     }
   ]
 })

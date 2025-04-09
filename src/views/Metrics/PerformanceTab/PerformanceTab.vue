@@ -24,7 +24,7 @@
               color="primary" 
               :loading="loadingClicks || loadingConversions"
               :disabled="!startDate || !endDate"
-              @click="applyDateFilter"
+              @click="fetchAllData"
             >
               Apply Filters
             </v-btn>
@@ -96,60 +96,28 @@
 </template>
 
 <script setup>
+import axios from "axios"
 import { ref, computed, onMounted } from 'vue'
 import Datepicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import HourlyChart from './Components/HourlyChart.vue'
 import DataTables from './Components/DataTables.vue'
 
-// Define emits
-const emit = defineEmits(['date-change', 'fetch-data'])
+// Data
+const clicksData = ref([])
+const conversionsData = ref([])
 
-// Props from parent component
-const props = defineProps({
-  clicksData: {
-    type: Array,
-    required: true
-  },
-  conversionsData: {
-    type: Array,
-    required: true
-  },
-  loadingClicks: {
-    type: Boolean,
-    required: true
-  },
-  loadingConversions: {
-    type: Boolean,
-    required: true
-  },
-  clicksError: {
-    type: String,
-    default: null
-  },
-  conversionsError: {
-    type: String,
-    default: null
-  },
-  formatDateAndTime: {
-    type: Function,
-    required: true
-  },
-  startDate: {
-    type: Date,
-    default: null
-  },
-  endDate: {
-    type: Date,
-    default: null
-  },
-  formatDateForDisplay: {
-    type: Function,
-    required: true
-  }
-})
+// Loading states
+const loadingClicks = ref(false)
+const loadingConversions = ref(false)
 
-// Local date state
+// Error states
+const clicksError = ref(null)
+const conversionsError = ref(null)
+
+// Date states
+const startDate = ref(null)
+const endDate = ref(null)
 const selectedDate = ref(new Date())
 
 // Filter state
@@ -157,6 +125,15 @@ const filters = ref({
   offerName: null,
   subId: null
 })
+
+// Set default date to today
+const today = new Date()
+
+// Set initial start and end dates to today
+startDate.value = new Date(today)
+startDate.value.setHours(0, 0, 0, 0)
+endDate.value = new Date(today)
+endDate.value.setHours(23, 59, 59, 999)
 
 // Handle date change
 const onSelectedDateChange = (date) => {
@@ -172,26 +149,161 @@ const onSelectedDateChange = (date) => {
     const endDateObj = new Date(selectedDateObj)
     endDateObj.setHours(23, 59, 59, 999)
     
-    // Emit the date change to parent component
-    emit('date-change', {
-      startDate: startDateObj,
-      endDate: endDateObj
+    // Update local date state
+    startDate.value = startDateObj
+    endDate.value = endDateObj
+    
+    console.log('Performance date changed:', {
+      startDate: startDate.value,
+      endDate: endDate.value
     })
   }
 }
 
-// Trigger fetch data in parent component
-const applyDateFilter = () => {
-  emit('fetch-data')
+// Date formatters
+const formatDateForDisplay = (date) => {
+  if (!date) return ''
+  return date.toLocaleDateString()
+}
+
+// New formatter to include both date and time
+const formatDateAndTime = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString()
+}
+
+// Format for API requests (YYYY-MM-DD HH:MM:SS)
+const formatDateForApi = (date, isEndDate = false) => {
+  if (!date) return ''
+  
+  // Create a new date object to avoid modifying the original
+  const formattedDate = new Date(date)
+  
+  // Set time to 00:00:00 for start date or 23:59:59 for end date
+  if (isEndDate) {
+    formattedDate.setHours(23, 59, 59, 999)
+  } else {
+    formattedDate.setHours(0, 0, 0, 0)
+  }
+  
+  // Format as YYYY-MM-DD HH:MM:SS
+  const year = formattedDate.getFullYear()
+  const month = String(formattedDate.getMonth() + 1).padStart(2, '0')
+  const day = String(formattedDate.getDate()).padStart(2, '0')
+  const hours = String(formattedDate.getHours()).padStart(2, '0')
+  const minutes = String(formattedDate.getMinutes()).padStart(2, '0')
+  const seconds = String(formattedDate.getSeconds()).padStart(2, '0')
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+// Define field arrays for each data type
+const clicksFields = [
+  'click_date',
+  'offer',
+  'subid_1'
+]
+
+const conversionsFields = [
+  'conversion_date',
+  'offer_name',
+  'subid_1',
+  'price'
+]
+
+// Function to prepare common request parameters
+const getRequestParams = (fields = []) => {
+  return {
+    api_key: "hFct58Jru5Y5cPlP8VGq8Q",
+    affiliate_id: "207744",
+    start_date: formatDateForApi(startDate.value, false),
+    end_date: formatDateForApi(endDate.value, true),
+    fields: fields
+  }
+}
+
+// Function to fetch clicks data
+const fetchClicksData = async () => {
+  if (!startDate.value || !endDate.value) return
+  
+  try {
+    loadingClicks.value = true
+    clicksError.value = null
+    
+    const response = await axios.post("/api/clicks", getRequestParams(clicksFields))
+    
+    // Process clicks data
+    if (response.data && Array.isArray(response.data.data)) {
+      clicksData.value = response.data.data
+    } else if (response.data && typeof response.data === 'object') {
+      clicksData.value = Array.isArray(response.data) ? response.data : [response.data]
+    }
+    
+    console.log('Clicks API Response:', response)
+  } catch (err) {
+    console.error(`Error fetching clicks data:`, err)
+    clicksError.value = err.response?.data?.error || err.message || `Failed to fetch clicks data`
+  } finally {
+    loadingClicks.value = false
+  }
+}
+
+// Function to fetch conversions data
+const fetchConversionsData = async () => {
+  if (!startDate.value || !endDate.value) return
+  
+  try {
+    loadingConversions.value = true
+    conversionsError.value = null
+    
+    const response = await axios.post("/api/conversions", getRequestParams(conversionsFields))
+    
+    // Process conversions data
+    if (response.data && Array.isArray(response.data.data)) {
+      conversionsData.value = response.data.data
+    } else if (response.data && typeof response.data === 'object') {
+      conversionsData.value = Array.isArray(response.data) ? response.data : [response.data]
+    }
+    
+    console.log('Conversions API Response:', response)
+  } catch (err) {
+    console.error(`Error fetching conversions data:`, err)
+    conversionsError.value = err.response?.data?.error || err.message || `Failed to fetch conversions data`
+  } finally {
+    loadingConversions.value = false
+  }
+}
+
+// Function to fetch all performance data
+const fetchAllData = () => {
+  if (!startDate.value || !endDate.value) {
+    // Set performance error states to show the same message
+    clicksError.value = "Please select both start and end dates"
+    conversionsError.value = "Please select both start and end dates"
+    return
+  }
+  
+  // Clear previous data
+  clicksData.value = []
+  conversionsData.value = []
+  
+  // Clear previous errors
+  clicksError.value = null
+  conversionsError.value = null
+  
+  // Fetch performance data types concurrently and independently
+  fetchClicksData()
+  fetchConversionsData()
 }
 
 // Computed properties for filter options
 const offerNameOptions = computed(() => {
-  const clicksOffers = props.clicksData
+  const clicksOffers = clicksData.value
     .map(item => item.offer?.offer_name)
     .filter(name => name)
   
-  const conversionOffers = props.conversionsData
+  const conversionOffers = conversionsData.value
     .map(item => item.offer_name)
     .filter(name => name)
   
@@ -200,11 +312,11 @@ const offerNameOptions = computed(() => {
 })
 
 const subIdOptions = computed(() => {
-  const clicksSubIds = props.clicksData
+  const clicksSubIds = clicksData.value
     .map(item => item.subid_1)
     .filter(id => id)
   
-  const conversionSubIds = props.conversionsData
+  const conversionSubIds = conversionsData.value
     .map(item => item.subid_1)
     .filter(id => id)
   
@@ -224,12 +336,9 @@ const clearFilters = () => {
   filters.value.subId = null
 }
 
-// Initialize with current dates
+// Initialize with current dates and fetch data
 onMounted(() => {
-  // Initialize the selectedDate with the parent component's date
-  if (props.startDate) {
-    selectedDate.value = new Date(props.startDate)
-  }
+  fetchAllData()
 })
 </script>
 
