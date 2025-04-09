@@ -23,7 +23,7 @@
             <v-btn 
               color="primary" 
               :loading="loadingClicks || loadingConversions"
-              :disabled="!startDate || !endDate"
+              :disabled="!startDate || !endDate || !apiKey || !affiliateId"
               @click="fetchAllData"
             >
               Apply Filters
@@ -97,11 +97,23 @@
 
 <script setup>
 import axios from "axios"
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import Datepicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import HourlyChart from './Components/HourlyChart.vue'
 import DataTables from './Components/DataTables.vue'
+
+// Props
+const props = defineProps({
+  apiKey: {
+    type: String,
+    default: null
+  },
+  affiliateId: {
+    type: String,
+    default: null
+  }
+})
 
 // Data
 const clicksData = ref([])
@@ -215,8 +227,8 @@ const conversionsFields = [
 // Function to prepare common request parameters
 const getRequestParams = (fields = []) => {
   return {
-    api_key: "hFct58Jru5Y5cPlP8VGq8Q",
-    affiliate_id: "207744",
+    api_key: props.apiKey,
+    affiliate_id: props.affiliateId,
     start_date: formatDateForApi(startDate.value, false),
     end_date: formatDateForApi(endDate.value, true),
     fields: fields
@@ -225,7 +237,7 @@ const getRequestParams = (fields = []) => {
 
 // Function to fetch clicks data
 const fetchClicksData = async () => {
-  if (!startDate.value || !endDate.value) return
+  if (!startDate.value || !endDate.value || !props.apiKey || !props.affiliateId) return
   
   try {
     loadingClicks.value = true
@@ -251,7 +263,7 @@ const fetchClicksData = async () => {
 
 // Function to fetch conversions data
 const fetchConversionsData = async () => {
-  if (!startDate.value || !endDate.value) return
+  if (!startDate.value || !endDate.value || !props.apiKey || !props.affiliateId) return
   
   try {
     loadingConversions.value = true
@@ -281,6 +293,13 @@ const fetchAllData = () => {
     // Set performance error states to show the same message
     clicksError.value = "Please select both start and end dates"
     conversionsError.value = "Please select both start and end dates"
+    return
+  }
+  
+  if (!props.apiKey || !props.affiliateId) {
+    // Set error states to show API credentials missing
+    clicksError.value = "API credentials are missing"
+    conversionsError.value = "API credentials are missing"
     return
   }
   
@@ -336,9 +355,23 @@ const clearFilters = () => {
   filters.value.subId = null
 }
 
-// Initialize with current dates and fetch data
+// Watch for changes in API credentials to refresh data
+watch(
+  [() => props.apiKey, () => props.affiliateId], 
+  ([newApiKey, newAffiliateId], [oldApiKey, oldAffiliateId]) => {
+    if ((newApiKey && newAffiliateId) && 
+        (newApiKey !== oldApiKey || newAffiliateId !== oldAffiliateId)) {
+      console.log('API credentials changed, refreshing data')
+      fetchAllData()
+    }
+  }
+)
+
+// Initialize with current dates and fetch data if API credentials are available
 onMounted(() => {
-  fetchAllData()
+  if (props.apiKey && props.affiliateId) {
+    fetchAllData()
+  }
 })
 </script>
 

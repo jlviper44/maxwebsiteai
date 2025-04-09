@@ -39,7 +39,7 @@
             <v-btn 
               color="primary" 
               :loading="loadingSubaffiliateSummary"
-              :disabled="!startDateLocal || !endDateLocal"
+              :disabled="!startDateLocal || !endDateLocal || !apiKey || !affiliateId"
               @click="applyDateFilter"
             >
               Fetch Daily Data
@@ -125,6 +125,18 @@ import axios from 'axios'
 import SubaffiliateSummaryTable from './Components/SubaffiliateSummaryTable.vue'
 import SubaffiliateLineChart from './Components/SubaffiliateChartComponent.vue'
 
+// Props
+const props = defineProps({
+  apiKey: {
+    type: String,
+    default: null
+  },
+  affiliateId: {
+    type: String,
+    default: null
+  }
+})
+
 // Local state variables
 const startDateLocal = ref(null)
 const endDateLocal = ref(null)
@@ -196,6 +208,23 @@ watch(combinedData, () => {
   }
 }, { deep: true });
 
+// Expose the apiKey and affiliateId as computed properties
+const apiKey = computed(() => props.apiKey)
+const affiliateId = computed(() => props.affiliateId)
+
+// Watch for changes in API credentials to refresh data if needed
+watch(
+  [() => props.apiKey, () => props.affiliateId], 
+  ([newApiKey, newAffiliateId], [oldApiKey, oldAffiliateId]) => {
+    if ((newApiKey && newAffiliateId) && 
+        (newApiKey !== oldApiKey || newAffiliateId !== oldAffiliateId) &&
+        startDateLocal.value && endDateLocal.value) {
+      console.log('API credentials changed, refreshing data')
+      applyDateFilter()
+    }
+  }
+)
+
 // Set default dates (today minus 7 days to today)
 onMounted(() => {
   const today = new Date()
@@ -209,7 +238,9 @@ onMounted(() => {
   // Fetch data automatically on mount with a slight delay
   // to ensure all components are properly mounted
   setTimeout(() => {
-    applyDateFilter()
+    if (props.apiKey && props.affiliateId) {
+      applyDateFilter()
+    }
   }, 100)
 })
 
@@ -294,8 +325,8 @@ const getRequestParams = (startDate, endDate) => {
   ]
   
   return {
-    api_key: "hFct58Jru5Y5cPlP8VGq8Q",
-    affiliate_id: "207744",
+    api_key: props.apiKey,
+    affiliate_id: props.affiliateId,
     start_date: formatDateForApi(startDate, false),
     end_date: formatDateForApi(endDate, true),
     fields: fields
@@ -338,6 +369,11 @@ const fetchDayData = async (date) => {
 // Apply date filter and fetch data
 const applyDateFilter = async () => {
   if (!startDateLocal.value || !endDateLocal.value) return
+  
+  if (!props.apiKey || !props.affiliateId) {
+    localErrorState.value = "API credentials are missing"
+    return
+  }
   
   // Get all dates in range
   const dateRange = getDatesInRange(startDateLocal.value, endDateLocal.value)
