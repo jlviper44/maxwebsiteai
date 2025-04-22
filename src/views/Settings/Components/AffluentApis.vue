@@ -11,18 +11,7 @@
     <v-list v-else-if="affluentApis.length > 0">
       <v-list-item v-for="(api, index) in affluentApis" :key="index">
         <v-list-item-title>{{ api.Name }}</v-list-item-title>
-        <v-list-item-subtitle>
-          Affiliate ID: {{ api.AFFILIATE_ID }}
-        </v-list-item-subtitle>
         <template v-slot:append>
-          <v-btn
-            variant="text"
-            color="primary"
-            class="mr-2"
-            @click="editApi(api)"
-          >
-            Edit
-          </v-btn>
           <v-btn
             variant="text"
             color="error"
@@ -61,6 +50,7 @@
             variant="outlined"
             required
             :error-messages="validationErrors.AFFILIATE_ID"
+            type="password"
           ></v-text-field>
         </v-col>
         
