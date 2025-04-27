@@ -205,7 +205,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, getCurrentInstance } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { fetchDashboardData, updateSettings } from '@/api/dashboard';
 
 // Data state
@@ -257,6 +257,7 @@ async function fetchDashboardInfo() {
     if (response.success) {
       settings.value = response.settings;
       stats.value = response.stats;
+      console.log('Dashboard data loaded:', { settings: settings.value, stats: stats.value });
     } else {
       showSnackbar('Failed to load dashboard data: ' + response.error, 'error');
     }
@@ -272,25 +273,30 @@ async function fetchDashboardInfo() {
 async function saveSettings() {
   saving.value = true;
   try {
-    const response = await updateSettings({
+    console.log('Saving settings:', settings.value);
+    
+    const settingsToSave = {
       tikTokRoutingEnabled: settings.value.tikTokRoutingEnabled,
       darkModeEnabled: settings.value.darkModeEnabled
-    });
+    };
+    
+    const response = await updateSettings(settingsToSave);
     
     if (response.success) {
       showSnackbar('Settings saved successfully', 'success');
       
       // Update settings
-      settings.value = response.settings;
+      settings.value = response.settings || settings.value;
       
       // Apply dark mode if changed
       applyDarkMode(settings.value.darkModeEnabled);
     } else {
-      showSnackbar('Failed to save settings: ' + response.error, 'error');
+      console.error('Settings save failed:', response.error);
+      showSnackbar('Failed to save settings: ' + (response.error || 'Unknown error'), 'error');
     }
   } catch (error) {
-    console.error('Error saving settings:', error);
-    showSnackbar('Failed to save settings', 'error');
+    console.error('Error in saveSettings:', error);
+    showSnackbar('Failed to save settings: ' + error.message, 'error');
   } finally {
     saving.value = false;
   }
@@ -299,26 +305,16 @@ async function saveSettings() {
 // Apply dark mode
 function applyDarkMode(enabled) {
   try {
-    // Try to use Vuetify's theme system
-    const vuetify = getCurrentInstance()?.appContext.config.globalProperties.$vuetify;
-    if (vuetify && vuetify.theme) {
-      vuetify.theme.global.name.value = enabled ? 'dark' : 'light';
-    } else {
-      // Fallback to manual class toggle
-      document.documentElement.setAttribute('data-theme', enabled ? 'dark' : 'light');
-    }
-    
-    // Store in localStorage for persistence
+    // Use direct theme switching via localStorage and document attribute
     localStorage.setItem('darkMode', enabled ? 'true' : 'false');
+    document.documentElement.setAttribute('data-theme', enabled ? 'dark' : 'light');
     
-    // Dispatch event for other components to respond to
+    // Dispatch event for theme changes that other components can listen for
     window.dispatchEvent(new CustomEvent('themeChange', { 
       detail: { darkMode: enabled } 
     }));
   } catch (error) {
     console.warn('Error applying dark mode:', error);
-    // Fallback method
-    document.documentElement.setAttribute('data-theme', enabled ? 'dark' : 'light');
   }
 }
 

@@ -84,8 +84,11 @@ async function fetchShopifyStores(env) {
  */
 async function getGlobalSettings(env) {
   try {
+    console.log('Fetching global settings from KV store');
     const tikTokRoutingEnabled = await env.SETTINGS.get('tikTokRoutingEnabled') === 'true';
     const darkModeEnabled = await env.SETTINGS.get('darkModeEnabled') === 'true';
+    
+    console.log('Settings retrieved:', { tikTokRoutingEnabled, darkModeEnabled });
     
     return {
       tikTokRoutingEnabled,
@@ -160,6 +163,8 @@ export async function handleDashboardData(request, env) {
  */
 export async function handleSettingsUpdate(request, env) {
   try {
+    console.log('Received settings update request');
+    
     // Only accept POST requests
     if (request.method !== 'POST') {
       return createJsonResponse({
@@ -174,9 +179,11 @@ export async function handleSettingsUpdate(request, env) {
     
     if (contentType.includes('application/json')) {
       requestData = await request.json();
+      console.log('Received settings update (JSON):', requestData);
     } else {
       const formData = await request.formData();
       requestData = Object.fromEntries(formData.entries());
+      console.log('Received settings update (FormData):', requestData);
     }
     
     // Update settings
@@ -188,17 +195,41 @@ export async function handleSettingsUpdate(request, env) {
                             requestData.darkModeEnabled === 'on' || 
                             requestData.darkModeEnabled === 'true';
     
-    await env.SETTINGS.put('tikTokRoutingEnabled', tikTokRoutingEnabled.toString());
-    await env.SETTINGS.put('darkModeEnabled', darkModeEnabled.toString());
-    
-    return createJsonResponse({
-      success: true,
-      message: 'Settings updated successfully',
-      settings: {
-        tikTokRoutingEnabled,
-        darkModeEnabled
-      }
+    console.log('Processed settings values:', {
+      tikTokRoutingEnabled,
+      darkModeEnabled
     });
+    
+    try {
+      // Debug existing values
+      const existingTikTok = await env.SETTINGS.get('tikTokRoutingEnabled');
+      const existingDarkMode = await env.SETTINGS.get('darkModeEnabled');
+      console.log('Existing settings:', { existingTikTok, existingDarkMode });
+      
+      // Save new values
+      await env.SETTINGS.put('tikTokRoutingEnabled', tikTokRoutingEnabled.toString());
+      await env.SETTINGS.put('darkModeEnabled', darkModeEnabled.toString());
+      
+      // Verify update
+      const newTikTok = await env.SETTINGS.get('tikTokRoutingEnabled');
+      const newDarkMode = await env.SETTINGS.get('darkModeEnabled');
+      console.log('Updated settings:', { newTikTok, newDarkMode });
+      
+      return createJsonResponse({
+        success: true,
+        message: 'Settings updated successfully',
+        settings: {
+          tikTokRoutingEnabled,
+          darkModeEnabled
+        }
+      });
+    } catch (storageError) {
+      console.error('Error writing to KV store:', storageError);
+      return createJsonResponse({
+        success: false,
+        error: `Error updating settings in storage: ${storageError.message}`
+      }, 500);
+    }
   } catch (error) {
     console.error('Error updating settings:', error);
     return createJsonResponse({
