@@ -5,6 +5,8 @@ import CampaignStats from '@/views/Campaigns/CampaignStats.vue'
 import CampaignForm from '@/views/Campaigns/CampaignForm.vue'
 import TemplatesView from '@/views/Templates/TemplatesView.vue'
 import TemplateForm from '@/views/Templates/TemplateForm.vue'
+import ShopifyStoresView from '@/views/Shopify/ShopifyStoresView.vue'
+import ShopifyStoreForm from '@/views/Shopify/ShopifyStoreForm.vue'
 import Metrics from '@/views/Metrics/Metrics.vue'
 import Settings from '@/views/Settings/Settings.vue'
 
@@ -48,6 +50,21 @@ const routes = [
     path: '/templates/edit/:id',
     name: 'template-edit',
     component: TemplateForm
+  },
+  {
+    path: '/shopify',
+    name: 'shopify',
+    component: ShopifyStoresView
+  },
+  {
+    path: '/shopify/add',
+    name: 'shopify-add',
+    component: ShopifyStoreForm
+  },
+  {
+    path: '/shopify/edit/:id',
+    name: 'shopify-edit',
+    component: ShopifyStoreForm
   },
   {
     path: '/metrics',

@@ -17,6 +17,15 @@ import {
   handleTemplateDelete,
   handleTemplateUsageCheck
 } from './templatesHandler.js';
+import {
+  handleShopifyStoresList,
+  handleShopifyStoreDetail,
+  handleShopifyStoreTest,
+  handleShopifyStoreAdd,
+  handleShopifyStoreEdit,
+  handleShopifyStoreDelete,
+  handleShopifyStoreUsageCheck
+} from './shopifyHandler.js';
 
 export default {
 	async fetch(request, env) {
@@ -103,6 +112,35 @@ export default {
 		
 		if (url.pathname === '/api/templates/usage') {
 			return handleTemplateUsageCheck(request, env);
+		}
+		
+		// Shopify store management routes
+		if (url.pathname === '/api/shopify') {
+			return handleShopifyStoresList(request, env);
+		}
+		
+		if (url.pathname === '/api/shopify/detail') {
+			return handleShopifyStoreDetail(request, env);
+		}
+		
+		if (url.pathname === '/api/shopify/test') {
+			return handleShopifyStoreTest(request, env);
+		}
+		
+		if (url.pathname === '/api/shopify/add') {
+			return handleShopifyStoreAdd(request, env);
+		}
+		
+		if (url.pathname === '/api/shopify/edit') {
+			return handleShopifyStoreEdit(request, env);
+		}
+		
+		if (url.pathname === '/api/shopify/delete') {
+			return handleShopifyStoreDelete(request, env);
+		}
+		
+		if (url.pathname === '/api/shopify/usage') {
+			return handleShopifyStoreUsageCheck(request, env);
 		}
 		
 		// Original API endpoint

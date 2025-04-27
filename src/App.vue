@@ -58,6 +58,7 @@ const menuItems = [
   { title: 'Dashboard', icon: 'mdi-view-dashboard', path: '/' },
   { title: 'Campaigns', icon: 'mdi-bullhorn', path: '/campaigns' },
   { title: 'Templates', icon: 'mdi-file-document-outline', path: '/templates' },
+  { title: 'Shopify Stores', icon: 'mdi-shopping', path: '/shopify' },
   { title: 'Metrics', icon: 'mdi-chart-bar', path: '/metrics' },
   { title: 'Settings', icon: 'mdi-cog', path: '/settings' }
 ]
@@ -70,6 +71,9 @@ const currentRouteName = computed(() => {
   if (route.name === 'templates') return 'Templates';
   if (route.name === 'template-create') return 'Create Template';
   if (route.name === 'template-edit') return 'Edit Template';
+  if (route.name === 'shopify') return 'Shopify Stores';
+  if (route.name === 'shopify-add') return 'Add Shopify Store';
+  if (route.name === 'shopify-edit') return 'Edit Shopify Store';
   return route.name?.toString().charAt(0).toUpperCase() + route.name?.toString().slice(1) || 'Dashboard';
 })
 </script>
