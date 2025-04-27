@@ -1,11 +1,18 @@
 <template>
   <div>
     <!-- Date range selection -->
-    <div class="date-filters mb-6">
-      <v-card class="pa-4 date-card no-border" elevation="0">
+    <v-card class="date-filters mb-6 elevation-2 rounded-lg" variant="elevated">
+      <v-card-title class="pb-2 d-flex align-center">
+        <v-icon icon="mdi-calendar" color="primary" class="mr-2"></v-icon>
+        <span class="text-h6">Date Range</span>
+      </v-card-title>
+      
+      <v-divider></v-divider>
+      
+      <v-card-text class="pa-4">
         <div class="d-flex flex-wrap align-center">
           <div class="me-4 mb-2 date-picker-container">
-            <label class="text-body-1 mb-1 d-block">Date</label>
+            <label class="text-body-1 mb-1 d-block font-weight-medium">Date</label>
             <Datepicker 
               v-model="selectedDate" 
               :max-date="new Date()"
@@ -16,6 +23,8 @@
               :format="formatDateForDisplay"
               position="bottom"
               @update:model-value="onSelectedDateChange"
+              :dark="isDarkMode"
+              class="performance-date-picker"
             />
           </div>
           
@@ -25,13 +34,16 @@
               :loading="loadingClicks || loadingConversions"
               :disabled="!startDate || !endDate || !apiKey || !affiliateId"
               @click="fetchAllData"
+              variant="elevated"
+              prepend-icon="mdi-refresh"
+              class="apply-btn"
             >
               Apply Filters
             </v-btn>
           </div>
         </div>
-      </v-card>
-    </div>
+      </v-card-text>
+    </v-card>
 
     <!-- Hourly Chart Component -->
     <HourlyChart 
@@ -42,43 +54,55 @@
     />
     
     <!-- Filters for Performance Tab -->
-    <v-card class="mb-4 pa-4" elevation="1">
-      <div class="d-flex flex-wrap align-center">
-        <v-autocomplete
-          v-model="filters.offerName"
-          :items="offerNameOptions"
-          label="Filter by Offer Name"
-          variant="outlined"
-          clearable
-          class="me-4 mb-2"
-          style="min-width: 250px;"
-          density="comfortable"
-          hide-details
-          @update:model-value="applyFilters"
-        ></v-autocomplete>
-        
-        <v-autocomplete
-          v-model="filters.subId"
-          :items="subIdOptions"
-          label="Filter by Sub ID"
-          variant="outlined"
-          clearable
-          class="me-4 mb-2"
-          style="min-width: 250px;"
-          density="comfortable"
-          hide-details
-          @update:model-value="applyFilters"
-        ></v-autocomplete>
-        
-        <v-btn 
-          color="secondary" 
-          variant="text" 
-          class="mb-2"
-          @click="clearFilters"
-        >
-          Clear Filters
-        </v-btn>
-      </div>
+    <v-card class="mb-4 pa-4 elevation-2 rounded-lg filter-card" variant="elevated">
+      <v-card-title class="pb-2 d-flex align-center">
+        <v-icon icon="mdi-filter" color="primary" class="mr-2"></v-icon>
+        <span class="text-h6">Filters</span>
+      </v-card-title>
+      
+      <v-divider></v-divider>
+      
+      <v-card-text class="pt-4">
+        <div class="d-flex flex-wrap align-center">
+          <v-autocomplete
+            v-model="filters.offerName"
+            :items="offerNameOptions"
+            label="Filter by Offer Name"
+            variant="outlined"
+            clearable
+            class="me-4 mb-2 filter-input"
+            style="min-width: 250px;"
+            density="comfortable"
+            hide-details
+            prepend-inner-icon="mdi-tag-multiple"
+            @update:model-value="applyFilters"
+          ></v-autocomplete>
+          
+          <v-autocomplete
+            v-model="filters.subId"
+            :items="subIdOptions"
+            label="Filter by Sub ID"
+            variant="outlined"
+            clearable
+            class="me-4 mb-2 filter-input"
+            style="min-width: 250px;"
+            density="comfortable"
+            hide-details
+            prepend-inner-icon="mdi-identifier"
+            @update:model-value="applyFilters"
+          ></v-autocomplete>
+          
+          <v-btn 
+            color="secondary" 
+            variant="tonal" 
+            class="mb-2 clear-btn"
+            prepend-icon="mdi-close"
+            @click="clearFilters"
+          >
+            Clear Filters
+          </v-btn>
+        </div>
+      </v-card-text>
     </v-card>
     
     <!-- Data Tables Component -->
@@ -98,10 +122,19 @@
 <script setup>
 import axios from "axios"
 import { ref, computed, onMounted, watch } from 'vue'
+import { useTheme } from 'vuetify'
 import Datepicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import HourlyChart from './Components/HourlyChart.vue'
 import DataTables from './Components/DataTables.vue'
+
+// Initialize Vuetify theme
+const theme = useTheme();
+
+// Get current theme
+const isDarkMode = computed(() => {
+  return theme.global.current.value.dark;
+});
 
 // Props
 const props = defineProps({
@@ -375,24 +408,47 @@ onMounted(() => {
 })
 </script>
 
+<style>
+:root {
+  --datepicker-bg: #ffffff;
+  --datepicker-text: #333333;
+  --filter-card-bg: #ffffff;
+  --transition-speed: 0.3s;
+}
+
+[data-theme="dark"] {
+  --datepicker-bg: #1e1e1e;
+  --datepicker-text: #ffffff;
+  --filter-card-bg: #1e1e1e;
+}
+</style>
+
 <style scoped>
 /* Date picker container and positioning fixes */
-.date-card {
+.date-filters, .filter-card {
+  background-color: var(--filter-card-bg) !important;
+  transition: background-color var(--transition-speed) ease;
   overflow: visible !important;
   position: relative;
   z-index: 1;
-}
-
-/* Remove card border */
-.no-border {
-  border: none !important;
-  box-shadow: none !important;
 }
 
 .date-picker-container {
   position: relative;
   z-index: 2;
   width: 250px;
+}
+
+.apply-btn, .clear-btn {
+  transition: all var(--transition-speed) ease;
+}
+
+.apply-btn:hover, .clear-btn:hover {
+  transform: translateY(-2px);
+}
+
+.filter-input {
+  transition: all var(--transition-speed) ease;
 }
 
 /* Fix for date picker z-index issue */
@@ -402,7 +458,9 @@ onMounted(() => {
 
 :deep(.dp__menu) {
   z-index: 100 !important;
-  background-color: white !important;
+  background-color: var(--datepicker-bg) !important;
+  color: var(--datepicker-text) !important;
+  transition: all var(--transition-speed) ease;
 }
 
 :deep(.dp__overlay) {
@@ -412,26 +470,58 @@ onMounted(() => {
 /* Make sure the date picker input doesn't get clipped */
 :deep(.dp__input) {
   z-index: 2;
-  background-color: white !important;
+  background-color: var(--datepicker-bg) !important;
+  color: var(--datepicker-text) !important;
+  transition: all var(--transition-speed) ease;
+  border-radius: 8px;
 }
 
 /* Ensure the date picker popup has enough space */
 :deep(.dp__instance_calendar) {
   position: absolute;
   margin-top: 0;
-  background-color: white !important;
+  background-color: var(--datepicker-bg) !important;
+  transition: all var(--transition-speed) ease;
 }
 
 /* Set background color for all date picker components */
 :deep(.dp__main) {
-  background-color: white !important;
+  background-color: var(--datepicker-bg) !important;
+  transition: all var(--transition-speed) ease;
 }
 
 :deep(.dp__calendar_header) {
-  background-color: white !important;
+  background-color: var(--datepicker-bg) !important;
+  color: var(--datepicker-text) !important;
+  transition: all var(--transition-speed) ease;
 }
 
 :deep(.dp__calendar) {
-  background-color: white !important;
+  background-color: var(--datepicker-bg) !important;
+  color: var(--datepicker-text) !important;
+  transition: all var(--transition-speed) ease;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .date-picker-container {
+    width: 100%;
+  }
+  
+  .apply-btn {
+    width: 100%;
+    margin-top: 16px;
+  }
+  
+  .filter-input {
+    width: 100%;
+    min-width: 100% !important;
+    margin-right: 0 !important;
+  }
+  
+  .clear-btn {
+    width: 100%;
+    margin-top: 8px;
+  }
 }
 </style>

@@ -1,8 +1,9 @@
 <template>
   <div class="shopify-store-form">
-    <v-card>
-      <v-card-title>
-        {{ isEdit ? 'Edit Shopify Store' : 'Add Shopify Store' }}
+    <v-card class="form-card elevation-2 rounded-lg" variant="elevated">
+      <v-card-title class="pb-2 d-flex align-center">
+        <v-icon :icon="isEdit ? 'mdi-store-edit' : 'mdi-store-plus'" color="primary" class="mr-2"></v-icon>
+        <span class="text-h6">{{ isEdit ? 'Edit Shopify Store' : 'Add Shopify Store' }}</span>
         <v-btn
           icon 
           color="primary" 
@@ -14,114 +15,176 @@
         </v-btn>
       </v-card-title>
       
-      <v-card-text v-if="loading">
-        <div class="text-center py-4">
-          <v-progress-circular indeterminate color="primary"></v-progress-circular>
-          <p class="mt-2">{{ isEdit ? 'Loading store...' : 'Loading...' }}</p>
+      <v-divider></v-divider>
+      
+      <v-card-text v-if="loading" class="pa-6">
+        <div class="text-center py-8">
+          <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
+          <p class="mt-4 text-medium-emphasis">{{ isEdit ? 'Loading store...' : 'Loading...' }}</p>
         </div>
       </v-card-text>
       
-      <v-card-text v-else>
+      <v-card-text v-else class="pa-6">
         <v-form ref="form" v-model="formValid" @submit.prevent="submitForm">
-          <!-- Store Name -->
-          <v-text-field
-            v-model="formData.storeName"
-            label="Store Name"
-            :rules="[v => !!v || 'Store name is required']"
-            required
-            hint="A descriptive name for your store."
-            persistent-hint
-          ></v-text-field>
+          <v-row>
+            <v-col cols="12">
+              <!-- Store Name -->
+              <v-text-field
+                v-model="formData.storeName"
+                label="Store Name"
+                :rules="[v => !!v || 'Store name is required']"
+                required
+                hint="A descriptive name for your store."
+                persistent-hint
+                variant="outlined"
+                prepend-inner-icon="mdi-store"
+                placeholder="My Shopify Store"
+              ></v-text-field>
+            </v-col>
+            
+            <v-col cols="12">
+              <!-- Store URL -->
+              <v-text-field
+                v-model="formData.storeUrl"
+                label="Store URL"
+                type="url"
+                :rules="[
+                  v => !!v || 'Store URL is required',
+                  v => /^https:\/\/.*\.myshopify\.com/.test(v) || 'Must be a valid Shopify URL (https://your-store.myshopify.com)'
+                ]"
+                required
+                placeholder="https://your-store.myshopify.com"
+                hint="The URL of your Shopify store."
+                persistent-hint
+                variant="outlined"
+                prepend-inner-icon="mdi-web"
+              ></v-text-field>
+            </v-col>
+            
+            <v-col cols="12" md="6">
+              <!-- API Key -->
+              <v-text-field
+                v-model="formData.apiKey"
+                label="API Key"
+                :rules="[v => isEdit ? true : !!v || 'API key is required']"
+                :required="!isEdit"
+                :placeholder="isEdit ? 'Enter new API key to change' : ''"
+                :hint="isEdit ? 'Leave blank to keep the current API key.' : 'The API key from your Shopify private app.'"
+                persistent-hint
+                variant="outlined"
+                prepend-inner-icon="mdi-key"
+                :type="showSecrets ? 'text' : 'password'" 
+                :append-inner-icon="showSecrets ? 'mdi-eye' : 'mdi-eye-off'"
+                @click:append-inner="showSecrets = !showSecrets"
+              ></v-text-field>
+            </v-col>
+            
+            <v-col cols="12" md="6">
+              <!-- API Secret -->
+              <v-text-field
+                v-model="formData.apiSecret"
+                label="API Secret"
+                :type="showSecrets ? 'text' : 'password'"
+                :rules="[v => isEdit ? true : !!v || 'API secret is required']"
+                :required="!isEdit"
+                :placeholder="isEdit ? 'Enter new API secret to change' : ''"
+                :hint="isEdit ? 'Leave blank to keep the current API secret.' : 'The API secret from your Shopify private app.'"
+                persistent-hint
+                variant="outlined"
+                prepend-inner-icon="mdi-shield-key"
+              ></v-text-field>
+            </v-col>
+            
+            <v-col cols="12">
+              <!-- Access Token -->
+              <v-text-field
+                v-model="formData.accessToken"
+                label="Access Token"
+                :type="showSecrets ? 'text' : 'password'"
+                :rules="[v => isEdit ? true : !!v || 'Access token is required']"
+                :required="!isEdit"
+                :placeholder="isEdit ? 'Enter new access token to change' : ''"
+                :hint="isEdit ? 'Leave blank to keep the current access token.' : 'The access token from your Shopify private app.'"
+                persistent-hint
+                variant="outlined"
+                prepend-inner-icon="mdi-key-chain"
+              ></v-text-field>
+              
+              <div class="d-flex align-center mt-2">
+                <v-checkbox
+                  v-model="showSecrets"
+                  label="Show sensitive information"
+                  color="primary"
+                  hide-details
+                  density="comfortable"
+                ></v-checkbox>
+              </div>
+            </v-col>
+            
+            <v-col cols="12">
+              <!-- Store Active -->
+              <v-card variant="tonal" color="primary" class="pa-4 mb-4 rounded-lg store-active-card">
+                <div class="d-flex align-center">
+                  <v-switch
+                    v-model="formData.active"
+                    label="Store Active"
+                    color="primary"
+                    hide-details
+                  ></v-switch>
+                  <div class="ml-3">
+                    <v-chip
+                      :color="formData.active ? 'success' : 'error'"
+                      size="small"
+                      variant="elevated"
+                    >
+                      {{ formData.active ? 'Active' : 'Inactive' }}
+                    </v-chip>
+                    <div class="text-body-2 mt-1 store-active-hint">
+                      When unchecked, this store will not be available for campaigns.
+                    </div>
+                  </div>
+                </div>
+              </v-card>
+            </v-col>
+          </v-row>
           
-          <!-- Store URL -->
-          <v-text-field
-            v-model="formData.storeUrl"
-            label="Store URL"
-            type="url"
-            :rules="[
-              v => !!v || 'Store URL is required',
-              v => /^https:\/\/.*\.myshopify\.com/.test(v) || 'Must be a valid Shopify URL (https://your-store.myshopify.com)'
-            ]"
-            required
-            placeholder="https://your-store.myshopify.com"
-            hint="The URL of your Shopify store."
-            persistent-hint
-            class="mt-4"
-          ></v-text-field>
-          
-          <!-- API Key -->
-          <v-text-field
-            v-model="formData.apiKey"
-            label="API Key"
-            :rules="[v => isEdit ? true : !!v || 'API key is required']"
-            :required="!isEdit"
-            :placeholder="isEdit ? 'Enter new API key to change' : ''"
-            :hint="isEdit ? 'Leave blank to keep the current API key.' : 'The API key from your Shopify private app.'"
-            persistent-hint
-            class="mt-4"
-          ></v-text-field>
-          
-          <!-- API Secret -->
-          <v-text-field
-            v-model="formData.apiSecret"
-            label="API Secret"
-            type="password"
-            :rules="[v => isEdit ? true : !!v || 'API secret is required']"
-            :required="!isEdit"
-            :placeholder="isEdit ? 'Enter new API secret to change' : ''"
-            :hint="isEdit ? 'Leave blank to keep the current API secret.' : 'The API secret from your Shopify private app.'"
-            persistent-hint
-            class="mt-4"
-          ></v-text-field>
-          
-          <!-- Access Token -->
-          <v-text-field
-            v-model="formData.accessToken"
-            label="Access Token"
-            type="password"
-            :rules="[v => isEdit ? true : !!v || 'Access token is required']"
-            :required="!isEdit"
-            :placeholder="isEdit ? 'Enter new access token to change' : ''"
-            :hint="isEdit ? 'Leave blank to keep the current access token.' : 'The access token from your Shopify private app.'"
-            persistent-hint
-            class="mt-4"
-          ></v-text-field>
-          
-          <!-- Store Active -->
-          <v-switch
-            v-model="formData.active"
-            label="Store Active"
-            color="primary"
-            hint="When unchecked, this store will not be available for campaigns."
-            persistent-hint
-            class="mt-4"
-          ></v-switch>
-          
-          <v-card variant="outlined" class="info-box mt-4 mb-4">
-            <v-card-text>
-              <strong>Note:</strong> You need to create a private app in your Shopify store with access to the following scopes:
-              <ul>
-                <li>read_products</li>
-                <li>write_content</li>
-              </ul>
+          <v-card variant="outlined" class="info-box mb-6 rounded-lg">
+            <v-card-text class="pa-4">
+              <div class="d-flex align-start">
+                <v-icon icon="mdi-information" color="info" class="mr-3 mt-1"></v-icon>
+                <div>
+                  <span class="font-weight-medium">Note:</span> You need to create a private app in your Shopify store with access to the following scopes:
+                  <ul class="mt-2 scope-list">
+                    <li class="scope-item"><v-icon icon="mdi-book-open-variant" size="small" class="mr-1"></v-icon> read_products</li>
+                    <li class="scope-item"><v-icon icon="mdi-file-document-edit" size="small" class="mr-1"></v-icon> write_content</li>
+                  </ul>
+                </div>
+              </div>
             </v-card-text>
           </v-card>
           
           <!-- Submit Buttons -->
-          <div class="d-flex mt-6">
+          <div class="d-flex mt-6 justify-center">
             <v-btn
               color="primary"
               type="submit"
               :loading="submitting"
               :disabled="!formValid"
+              variant="elevated"
+              size="large"
+              :prepend-icon="isEdit ? 'mdi-content-save' : 'mdi-plus'"
+              min-width="150"
             >
               {{ isEdit ? 'Update Store' : 'Add Store' }}
             </v-btn>
             
             <v-btn
-              variant="text"
+              variant="tonal"
               to="/shopify"
               class="ml-4"
+              size="large"
+              prepend-icon="mdi-cancel"
+              min-width="100"
             >
               Cancel
             </v-btn>
@@ -131,7 +194,7 @@
     </v-card>
     
     <!-- Snackbar for notifications -->
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color">
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" location="top">
       {{ snackbar.text }}
       <template v-slot:actions>
         <v-btn variant="text" @click="snackbar.show = false">Close</v-btn>
@@ -143,7 +206,16 @@
 <script setup>
 import { ref, computed, onMounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useTheme } from 'vuetify'
 import { fetchShopifyStore, addShopifyStore, updateShopifyStore } from '@/api/shopify';
+
+// Initialize Vuetify theme
+const theme = useTheme();
+
+// Get current theme
+const isDarkMode = computed(() => {
+  return theme.global.current.value.dark;
+});
 
 const route = useRoute();
 const router = useRouter();
@@ -167,6 +239,7 @@ const formData = reactive({
 // UI state
 const loading = ref(true);
 const submitting = ref(false);
+const showSecrets = ref(false);
 const snackbar = ref({
   show: false,
   text: '',
@@ -283,12 +356,72 @@ function showSnackbar(text, color = 'info') {
 }
 </script>
 
+<style>
+:root {
+  --form-card-bg: #ffffff;
+  --store-active-card-bg: rgba(25, 118, 210, 0.08);
+  --store-active-hint-color: #616161;
+  --info-box-bg: #f5f5f5;
+  --scope-item-color: #333333;
+  --transition-speed: 0.3s;
+}
+
+[data-theme="dark"] {
+  --form-card-bg: #1e1e1e;
+  --store-active-card-bg: rgba(100, 181, 246, 0.08);
+  --store-active-hint-color: #b0bec5;
+  --info-box-bg: #2d2d2d;
+  --scope-item-color: #e0e0e0;
+}
+</style>
+
 <style scoped>
 .shopify-store-form {
   padding: 16px;
 }
 
+.form-card {
+  background-color: var(--form-card-bg) !important;
+  transition: background-color var(--transition-speed) ease;
+}
+
+.store-active-card {
+  background-color: var(--store-active-card-bg) !important;
+  transition: background-color var(--transition-speed) ease;
+}
+
+.store-active-hint {
+  color: var(--store-active-hint-color);
+  transition: color var(--transition-speed) ease;
+}
+
 .info-box {
-  background-color: #f5f5f5;
+  background-color: var(--info-box-bg) !important;
+  transition: background-color var(--transition-speed) ease;
+}
+
+.scope-list {
+  padding-left: 16px;
+  margin-top: 8px;
+}
+
+.scope-item {
+  color: var(--scope-item-color);
+  margin-bottom: 4px;
+  transition: color var(--transition-speed) ease;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .d-flex.mt-6 {
+    flex-direction: column;
+  }
+  
+  .d-flex.mt-6 .v-btn {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-top: 12px;
+  }
 }
 </style>

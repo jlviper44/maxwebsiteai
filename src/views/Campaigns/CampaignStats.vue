@@ -1,7 +1,8 @@
 <template>
   <div class="campaign-stats">
-    <v-card>
-      <v-card-title>
+    <v-card elevation="2" rounded="lg" class="stats-card">
+      <v-card-title class="text-h5 pb-2 d-flex align-center">
+        <v-icon icon="mdi-chart-box" color="primary" class="mr-2"></v-icon>
         Statistics for: {{ campaign?.name }}
         <v-btn
           icon 
@@ -14,50 +15,65 @@
         </v-btn>
       </v-card-title>
       
+      <v-divider></v-divider>
+      
       <v-card-text v-if="loading">
-        <div class="text-center py-4">
-          <v-progress-circular indeterminate color="primary"></v-progress-circular>
-          <p class="mt-2">Loading campaign statistics...</p>
+        <div class="text-center py-6">
+          <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
+          <p class="mt-4 text-medium-emphasis">Loading campaign statistics...</p>
         </div>
       </v-card-text>
       
       <v-card-text v-else-if="!campaign">
-        <div class="text-center py-4">
-          <p>Campaign not found. The campaign may have been deleted.</p>
-          <v-btn color="primary" to="/campaigns" class="mt-4">Back to Campaigns</v-btn>
+        <div class="text-center py-6">
+          <v-icon icon="mdi-alert-circle" color="error" size="64" class="mb-4"></v-icon>
+          <p class="text-h6">Campaign not found</p>
+          <p class="text-medium-emphasis mb-4">The campaign may have been deleted.</p>
+          <v-btn color="primary" to="/campaigns" class="mt-4" variant="elevated" prepend-icon="mdi-arrow-left">
+            Back to Campaigns
+          </v-btn>
         </div>
       </v-card-text>
       
-      <v-card-text v-else>
-        <div class="detail-grid">
-          <div class="detail-item">
-            <div class="detail-label">Campaign Status</div>
+      <v-card-text v-else class="pt-4">
+        <div class="detail-grid pa-2">
+          <v-card variant="flat" class="detail-item py-2 px-3">
+            <div class="detail-label mb-1">Campaign Status</div>
             <div class="detail-value">
-              <v-chip :color="campaign.active ? 'success' : 'error'" size="small">
+              <v-chip
+                :color="campaign.active ? 'success' : 'error'"
+                size="small"
+                variant="elevated"
+              >
                 {{ campaign.active ? 'Active' : 'Inactive' }}
               </v-chip>
             </div>
-          </div>
+          </v-card>
           
-          <div class="detail-item">
-            <div class="detail-label">Campaign ID</div>
+          <v-card variant="flat" class="detail-item py-2 px-3">
+            <div class="detail-label mb-1">Campaign ID</div>
             <div class="detail-value">{{ campaign.id }}</div>
-          </div>
+          </v-card>
           
-          <div class="detail-item">
-            <div class="detail-label">Landing Page</div>
+          <v-card variant="flat" class="detail-item py-2 px-3">
+            <div class="detail-label mb-1">Landing Page</div>
             <div class="detail-value">
               <div class="d-flex align-center">
                 <v-btn 
                   size="small" 
-                  variant="text"
+                  variant="tonal"
+                  color="primary"
+                  prepend-icon="mdi-content-copy"
                   @click="copyLink(landingPageUrl)"
+                  class="mr-2"
                 >
                   Copy URL
                 </v-btn>
                 <v-btn 
                   size="small" 
-                  variant="text"
+                  variant="tonal"
+                  color="secondary"
+                  prepend-icon="mdi-refresh"
                   @click="refreshLink"
                   :loading="refreshing"
                 >
@@ -65,39 +81,43 @@
                 </v-btn>
               </div>
             </div>
-          </div>
+          </v-card>
           
-          <div class="detail-item">
-            <div class="detail-label">Created</div>
+          <v-card variant="flat" class="detail-item py-2 px-3">
+            <div class="detail-label mb-1">Created</div>
             <div class="detail-value">{{ dates.created }}</div>
-          </div>
+          </v-card>
           
-          <div class="detail-item">
-            <div class="detail-label">Last Visit</div>
+          <v-card variant="flat" class="detail-item py-2 px-3">
+            <div class="detail-label mb-1">Last Visit</div>
             <div class="detail-value">{{ dates.lastVisit }}</div>
-          </div>
+          </v-card>
           
-          <div class="detail-item">
-            <div class="detail-label">Template</div>
+          <v-card variant="flat" class="detail-item py-2 px-3">
+            <div class="detail-label mb-1">Template</div>
             <div class="detail-value">{{ template.name }} ({{ template.type }})</div>
-          </div>
+          </v-card>
           
-          <div class="detail-item">
-            <div class="detail-label">Whitehat Template</div>
+          <v-card variant="flat" class="detail-item py-2 px-3">
+            <div class="detail-label mb-1">Whitehat Template</div>
             <div class="detail-value">{{ whitehatTemplate }}</div>
-          </div>
+          </v-card>
           
-          <div class="detail-item">
-            <div class="detail-label">TikTok Routing</div>
+          <v-card variant="flat" class="detail-item py-2 px-3">
+            <div class="detail-label mb-1">TikTok Routing</div>
             <div class="detail-value">
-              <span :class="campaign.tikTokRoutingEnabled ? 'text-success' : 'text-error'">
+              <v-chip 
+                :color="campaign.tikTokRoutingEnabled ? 'success' : 'error'"
+                size="small"
+                variant="elevated"
+              >
                 {{ campaign.tikTokRoutingEnabled ? 'Enabled' : 'Disabled' }}
-              </span>
+              </v-chip>
             </div>
-          </div>
+          </v-card>
           
-          <div class="detail-item">
-            <div class="detail-label">Whitehat Threshold</div>
+          <v-card variant="flat" class="detail-item py-2 px-3 threshold-item">
+            <div class="detail-label mb-1">Whitehat Threshold</div>
             <div class="detail-value">
               <div class="d-flex align-center">
                 <v-text-field
@@ -105,13 +125,17 @@
                   type="number"
                   :rules="[v => v >= 0 || 'Must be at least 0']"
                   density="compact"
+                  variant="outlined"
                   style="width: 100px"
                   hide-details
+                  class="threshold-input"
                 ></v-text-field>
                 
                 <v-btn
                   color="primary"
                   size="small"
+                  variant="elevated"
+                  prepend-icon="mdi-check"
                   class="ml-2"
                   @click="updateThreshold"
                   :loading="updatingThreshold"
@@ -120,89 +144,133 @@
                 </v-btn>
               </div>
               
-              <div class="mt-2">
+              <div class="threshold-info mt-2 text-medium-emphasis">
                 First <strong>{{ campaign.whitehatThreshold }}</strong> clicks will see whitehat content regardless of traffic source.
                 <v-chip 
                   size="small"
                   :color="whitehatStatus.active ? 'success' : 'error'"
+                  variant="elevated"
                   class="ml-2"
                 >
                   {{ whitehatStatus.active ? `Active (${whitehatStatus.remaining} left)` : 'Inactive (threshold reached)' }}
                 </v-chip>
               </div>
             </div>
+          </v-card>
+        </div>
+        
+        <v-divider class="my-6"></v-divider>
+        
+        <div class="d-flex align-center mb-4">
+          <v-icon icon="mdi-trending-up" color="primary" class="mr-2"></v-icon>
+          <h3 class="text-h6">Traffic Statistics</h3>
+        </div>
+        
+        <div class="traffic-stats-grid">
+          <v-card variant="flat" class="traffic-stat-card tiktok">
+            <div class="d-flex align-center">
+              <v-icon icon="mdi-music-note" size="large" class="mr-2"></v-icon>
+              <div>
+                <div class="stats-value">{{ stats.tiktok }}</div>
+                <div class="stats-label">TikTok Clicks</div>
+              </div>
+            </div>
+          </v-card>
+          
+          <v-card variant="flat" class="traffic-stat-card non-tiktok">
+            <div class="d-flex align-center">
+              <v-icon icon="mdi-earth" size="large" class="mr-2"></v-icon>
+              <div>
+                <div class="stats-value">{{ stats.nonTiktok }}</div>
+                <div class="stats-label">Non-TikTok Clicks</div>
+              </div>
+            </div>
+          </v-card>
+          
+          <v-card variant="flat" class="traffic-stat-card total">
+            <div class="d-flex align-center">
+              <v-icon icon="mdi-cursor-default-click" size="large" class="mr-2"></v-icon>
+              <div>
+                <div class="stats-value">{{ totalClicks }}</div>
+                <div class="stats-label">Total Clicks</div>
+              </div>
+            </div>
+          </v-card>
+          
+          <v-card variant="flat" class="traffic-stat-card percentage">
+            <div class="d-flex align-center">
+              <v-icon icon="mdi-percent" size="large" class="mr-2"></v-icon>
+              <div>
+                <div class="stats-value">{{ percentages.tiktok }}%</div>
+                <div class="stats-label">TikTok Percentage</div>
+              </div>
+            </div>
+          </v-card>
+        </div>
+        
+        <div class="chart-container mt-6 rounded-lg pa-4">
+          <div v-if="totalClicks > 0">
+            <div class="d-flex align-center mb-2">
+              <v-icon icon="mdi-chart-pie" class="mr-2"></v-icon>
+              <div class="text-h6">Traffic Distribution</div>
+            </div>
+            
+            <div class="px-2">
+              <div class="d-flex justify-space-between mb-1">
+                <span class="text-caption">TikTok</span>
+                <span class="text-caption">{{ percentages.tiktok }}%</span>
+              </div>
+              <v-progress-linear
+                :model-value="parseFloat(percentages.tiktok)"
+                height="24"
+                color="primary"
+                class="mb-3 rounded-lg"
+              >
+                <template v-slot:default>
+                  <strong>{{ stats.tiktok }}</strong>
+                </template>
+              </v-progress-linear>
+              
+              <div class="d-flex justify-space-between mb-1">
+                <span class="text-caption">Other Sources</span>
+                <span class="text-caption">{{ percentages.nonTiktok }}%</span>
+              </div>
+              <v-progress-linear
+                :model-value="parseFloat(percentages.nonTiktok)"
+                height="24"
+                color="error"
+                class="rounded-lg"
+              >
+                <template v-slot:default>
+                  <strong>{{ stats.nonTiktok }}</strong>
+                </template>
+              </v-progress-linear>
+            </div>
+          </div>
+          
+          <div v-else class="text-center py-4">
+            <v-icon icon="mdi-chart-timeline-variant" color="info" size="48" class="mb-2 opacity-50"></v-icon>
+            <p class="text-medium-emphasis">No traffic data available yet.</p>
           </div>
         </div>
         
-        <v-divider class="my-4"></v-divider>
-        
-        <h3 class="text-h6 mb-4">Traffic Statistics</h3>
-        
-        <div class="stats-grid">
-          <div class="stats-card">
-            <div class="stats-value">{{ stats.tiktok }}</div>
-            <div class="stats-label">TikTok Clicks</div>
-          </div>
-          
-          <div class="stats-card">
-            <div class="stats-value">{{ stats.nonTiktok }}</div>
-            <div class="stats-label">Non-TikTok Clicks</div>
-          </div>
-          
-          <div class="stats-card">
-            <div class="stats-value">{{ totalClicks }}</div>
-            <div class="stats-label">Total Clicks</div>
-          </div>
-          
-          <div class="stats-card">
-            <div class="stats-value">{{ percentages.tiktok }}%</div>
-            <div class="stats-label">TikTok Percentage</div>
-          </div>
-        </div>
-        
-        <div class="chart-container mt-6">
-          <v-progress-linear
-            v-if="totalClicks > 0"
-            :model-value="parseFloat(percentages.tiktok)"
-            height="40"
-            color="primary"
-          >
-            <template v-slot:default="{ value }">
-              <span class="white--text">TikTok: {{ stats.tiktok }} ({{ percentages.tiktok }}%)</span>
-            </template>
-          </v-progress-linear>
-          
-          <v-progress-linear
-            v-if="totalClicks > 0"
-            :model-value="parseFloat(percentages.nonTiktok)"
-            height="40"
-            color="error"
-            class="mt-1"
-          >
-            <template v-slot:default="{ value }">
-              <span class="white--text">Non-TikTok: {{ stats.nonTiktok }} ({{ percentages.nonTiktok }}%)</span>
-            </template>
-          </v-progress-linear>
-          
-          <div v-if="totalClicks === 0" class="text-center py-4">
-            <p>No traffic data available yet.</p>
-          </div>
-        </div>
-        
-        <div class="actions mt-6">
+        <div class="actions mt-6 d-flex justify-center">
           <v-btn
             color="primary"
+            variant="elevated"
             :to="`/campaigns/edit/${campaign.id}`"
+            prepend-icon="mdi-pencil"
+            class="mr-4"
           >
             Edit Campaign
           </v-btn>
           
           <v-btn
-            variant="text"
+            variant="tonal"
             to="/campaigns"
-            class="ml-4"
+            prepend-icon="mdi-arrow-left"
           >
-            ← Back to Campaigns
+            Back to Campaigns
           </v-btn>
         </div>
       </v-card-text>
@@ -382,68 +450,146 @@ function showSnackbar(text, color = 'info') {
 }
 </script>
 
+<style>
+:root {
+  --detail-item-bg: #f5f7fa;
+  --detail-label-color: #666666;
+  --detail-value-color: #333333;
+  --stats-item-bg: rgba(25, 118, 210, 0.05);
+  --tiktok-card-bg: rgba(25, 118, 210, 0.1);
+  --non-tiktok-card-bg: rgba(231, 76, 60, 0.1);
+  --total-card-bg: rgba(46, 204, 113, 0.1);
+  --percentage-card-bg: rgba(156, 39, 176, 0.1);
+  --chart-bg: #f9f9f9;
+  --transition-speed: 0.3s;
+}
+
+[data-theme="dark"] {
+  --detail-item-bg: #1e1e1e;
+  --detail-label-color: #b0bec5;
+  --detail-value-color: #ffffff;
+  --stats-item-bg: rgba(100, 181, 246, 0.05);
+  --tiktok-card-bg: rgba(100, 181, 246, 0.15);
+  --non-tiktok-card-bg: rgba(229, 115, 115, 0.15);
+  --total-card-bg: rgba(129, 199, 132, 0.15);
+  --percentage-card-bg: rgba(206, 147, 216, 0.15);
+  --chart-bg: #1e1e1e;
+}
+</style>
+
 <style scoped>
 .campaign-stats {
   padding: 16px;
 }
 
+.stats-card {
+  transition: all var(--transition-speed) ease;
+}
+
 .detail-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   grid-gap: 16px;
 }
 
 .detail-item {
-  display: flex;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-  padding-bottom: 12px;
+  border-radius: 8px;
+  background-color: var(--detail-item-bg);
+  transition: background-color var(--transition-speed) ease;
 }
 
 .detail-label {
-  flex: 0 0 150px;
-  font-weight: bold;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--detail-label-color);
+  transition: color var(--transition-speed) ease;
 }
 
 .detail-value {
-  flex: 1;
+  color: var(--detail-value-color);
+  transition: color var(--transition-speed) ease;
 }
 
-.stats-grid {
+.threshold-item {
+  grid-column: 1 / -1;
+}
+
+.threshold-input {
+  max-width: 120px;
+}
+
+.threshold-info {
+  font-size: 0.875rem;
+}
+
+.traffic-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   grid-gap: 16px;
-  margin-top: 32px;
+  margin-top: 16px;
 }
 
-.stats-card {
-  background-color: #f5f5f5;
-  border-radius: 8px;
+.traffic-stat-card {
   padding: 16px;
-  text-align: center;
+  border-radius: 8px;
+  transition: all var(--transition-speed) ease;
+}
+
+.traffic-stat-card.tiktok {
+  background-color: var(--tiktok-card-bg);
+}
+
+.traffic-stat-card.non-tiktok {
+  background-color: var(--non-tiktok-card-bg);
+}
+
+.traffic-stat-card.total {
+  background-color: var(--total-card-bg);
+}
+
+.traffic-stat-card.percentage {
+  background-color: var(--percentage-card-bg);
 }
 
 .stats-value {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: bold;
-  color: #333;
+  line-height: 1.2;
 }
 
 .stats-label {
-  font-size: 14px;
-  color: #666;
-  margin-top: 8px;
+  font-size: 0.875rem;
+  color: var(--detail-label-color);
+  transition: color var(--transition-speed) ease;
 }
 
 .chart-container {
-  padding: 16px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
+  background-color: var(--chart-bg);
+  transition: background-color var(--transition-speed) ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.text-success {
-  color: rgb(76, 175, 80);
+.actions {
+  margin-top: 32px;
 }
 
-.text-error {
-  color: rgb(244, 67, 54);
+@media (max-width: 600px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .traffic-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+  
+  .actions .v-btn {
+    width: 100%;
+    margin-right: 0 !important;
+    margin-bottom: 8px;
+  }
 }
 </style>

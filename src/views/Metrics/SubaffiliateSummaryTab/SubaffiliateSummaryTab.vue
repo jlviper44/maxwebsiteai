@@ -1,12 +1,19 @@
 <template>
   <div>
     <!-- Date range and Sub ID selection -->
-    <div class="date-filters mb-6">
-      <v-card class="pa-4 date-card no-border" elevation="0">
+    <v-card class="date-filters mb-6 elevation-2 rounded-lg" variant="elevated">
+      <v-card-title class="pb-2 d-flex align-center">
+        <v-icon icon="mdi-calendar-range" color="primary" class="mr-2"></v-icon>
+        <span class="text-h6">Date Range & Filters</span>
+      </v-card-title>
+      
+      <v-divider></v-divider>
+      
+      <v-card-text class="pa-4">
         <div class="d-flex flex-wrap align-center justify-space-between">
           <div class="date-range-container d-flex flex-wrap align-center">
             <div class="me-4 mb-2 date-picker-container">
-              <label class="text-body-1 mb-1 d-block">Start Date</label>
+              <label class="text-body-1 mb-1 d-block font-weight-medium">Start Date</label>
               <Datepicker 
                 v-model="startDateLocal" 
                 :max-date="endDateLocal || new Date()"
@@ -16,11 +23,13 @@
                 placeholder="Select start date"
                 position="bottom"
                 @update:model-value="onStartDateChange"
+                :dark="isDarkMode"
+                class="date-picker"
               />
             </div>
             
             <div class="me-4 mb-2 date-picker-container">
-              <label class="text-body-1 mb-1 d-block">End Date</label>
+              <label class="text-body-1 mb-1 d-block font-weight-medium">End Date</label>
               <Datepicker 
                 v-model="endDateLocal" 
                 :min-date="startDateLocal"
@@ -31,6 +40,8 @@
                 placeholder="Select end date"
                 position="bottom"
                 @update:model-value="onEndDateChange"
+                :dark="isDarkMode"
+                class="date-picker"
               />
             </div>
           </div>
@@ -41,6 +52,9 @@
               :loading="loadingSubaffiliateSummary"
               :disabled="!startDateLocal || !endDateLocal || !apiKey || !affiliateId"
               @click="applyDateFilter"
+              variant="elevated"
+              prepend-icon="mdi-refresh"
+              class="fetch-btn"
             >
               Fetch Daily Data
             </v-btn>
@@ -58,52 +72,92 @@
             density="comfortable"
             variant="outlined"
             hide-details
-            class="max-w-md"
+            prepend-inner-icon="mdi-filter-variant"
+            class="sub-id-filter"
             @update:model-value="filterBySubId"
           >
-            <template v-slot:prepend-inner>
-              <v-icon>mdi-filter-variant</v-icon>
+            <template v-slot:selection="{ item }">
+              <div class="d-flex align-center">
+                <v-icon icon="mdi-account" size="small" class="mr-2"></v-icon>
+                <span>{{ item.raw }}</span>
+              </div>
             </template>
           </v-autocomplete>
         </div>
-      </v-card>
-    </div>
+      </v-card-text>
+    </v-card>
     
-    <!-- Loading state with progress indicator -->
-    <div v-if="loadingSubaffiliateSummary" class="d-flex flex-column justify-center align-center my-4">
-      <v-progress-circular indeterminate color="primary"></v-progress-circular>
-      <span class="mt-2">Loading data for each day in range...</span>
-      <div v-if="totalDays > 0" class="mt-2 text-body-2">
-        Processed {{ processedDays }} of {{ totalDays }} days ({{ Math.round((processedDays / totalDays) * 100) }}%)
-      </div>
-    </div>
+    <!-- Progress Indicator Card -->
+    <v-card v-if="loadingSubaffiliateSummary" class="mb-6 progress-card elevation-2 rounded-lg" variant="elevated">
+      <v-card-text class="pa-4">
+        <div class="d-flex flex-column justify-center align-center py-4">
+          <v-progress-circular indeterminate color="primary" size="56"></v-progress-circular>
+          <span class="mt-4 text-body-1">Loading data for each day in range...</span>
+          <div v-if="totalDays > 0" class="mt-3 text-body-2 progress-text">
+            <v-progress-linear
+              :model-value="(processedDays / totalDays) * 100"
+              color="primary"
+              height="10"
+              rounded
+              class="mb-2"
+            ></v-progress-linear>
+            Processed {{ processedDays }} of {{ totalDays }} days ({{ Math.round((processedDays / totalDays) * 100) }}%)
+          </div>
+        </div>
+      </v-card-text>
+    </v-card>
     
     <!-- Error message -->
     <v-alert
       v-if="subaffiliateSummaryError"
       type="error"
-      class="mb-4"
+      class="mb-4 elevation-1"
+      variant="elevated"
+      border="start"
       closable
+      prominent
     >
+      <template v-slot:prepend>
+        <v-icon icon="mdi-alert-circle" color="error"></v-icon>
+      </template>
       {{ subaffiliateSummaryError }}
     </v-alert>
     
     <!-- Chart Section -->
-    <div class="mb-6">
-      <v-card class="pa-4">
-        <h3 class="text-h6 mb-4">Subaffiliate Metrics Trend</h3>
+    <v-card class="mb-6 elevation-2 rounded-lg chart-card" variant="elevated">
+      <v-card-title class="pb-2 d-flex align-center">
+        <v-icon icon="mdi-chart-line" color="primary" class="mr-2"></v-icon>
+        <span class="text-h6">Subaffiliate Metrics Trend</span>
+      </v-card-title>
+      
+      <v-divider></v-divider>
+      
+      <v-card-text class="pa-4">
+        <div v-if="!loadingSubaffiliateSummary && displayData.length === 0" class="text-center py-4 empty-data">
+          <v-icon icon="mdi-chart-line-variant" size="large" class="mb-2 opacity-50"></v-icon>
+          <p>No data available for the selected date range.</p>
+          <p class="text-caption">Try selecting a different date range or API.</p>
+        </div>
+        
         <SubaffiliateLineChart
+          v-else
           :data="displayData"
           :start-date="startDateLocal"
           :end-date="endDateLocal"
         />
-      </v-card>
-    </div>
+      </v-card-text>
+    </v-card>
     
     <!-- Table Section -->
-    <div>
-      <v-card class="pa-4">
-        <h3 class="text-h6 mb-4">Subaffiliate Data</h3>
+    <v-card class="elevation-2 rounded-lg table-card" variant="elevated">
+      <v-card-title class="pb-2 d-flex align-center">
+        <v-icon icon="mdi-table" color="primary" class="mr-2"></v-icon>
+        <span class="text-h6">Subaffiliate Data</span>
+      </v-card-title>
+      
+      <v-divider></v-divider>
+      
+      <v-card-text class="pa-4">
         <SubaffiliateSummaryTable
           :data="displayData"
           :loading="loadingSubaffiliateSummary"
@@ -112,18 +166,27 @@
           :end-date="endDateLocal"
           :format-date="formatDate"
         />
-      </v-card>
-    </div>
+      </v-card-text>
+    </v-card>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useTheme } from 'vuetify'
 import Datepicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import axios from 'axios'
 import SubaffiliateSummaryTable from './Components/SubaffiliateSummaryTable.vue'
 import SubaffiliateLineChart from './Components/SubaffiliateChartComponent.vue'
+
+// Initialize Vuetify theme
+const theme = useTheme();
+
+// Get current theme
+const isDarkMode = computed(() => {
+  return theme.global.current.value.dark;
+});
 
 // Props
 const props = defineProps({
@@ -428,24 +491,76 @@ const applyDateFilter = async () => {
 }
 </script>
 
+<style>
+:root {
+  --datepicker-bg: #ffffff;
+  --datepicker-text: #333333;
+  --chart-card-bg: #ffffff;
+  --table-card-bg: #ffffff;
+  --progress-card-bg: #ffffff;
+  --empty-data-color: #757575;
+  --progress-text-color: #757575;
+  --transition-speed: 0.3s;
+}
+
+[data-theme="dark"] {
+  --datepicker-bg: #1e1e1e;
+  --datepicker-text: #ffffff;
+  --chart-card-bg: #1e1e1e;
+  --table-card-bg: #1e1e1e;
+  --progress-card-bg: #1e1e1e;
+  --empty-data-color: #b0bec5;
+  --progress-text-color: #b0bec5;
+}
+</style>
+
 <style scoped>
 /* Date picker container and positioning fixes */
-.date-card {
+.date-filters {
   overflow: visible !important;
   position: relative;
   z-index: 1;
-}
-
-/* Remove card border */
-.no-border {
-  border: none !important;
-  box-shadow: none !important;
+  background-color: var(--datepicker-bg) !important;
+  transition: background-color var(--transition-speed) ease;
 }
 
 .date-picker-container {
   position: relative;
   z-index: 2;
   width: 200px;
+}
+
+.chart-card, .table-card {
+  background-color: var(--chart-card-bg) !important;
+  transition: background-color var(--transition-speed) ease;
+}
+
+.progress-card {
+  background-color: var(--progress-card-bg) !important;
+  transition: background-color var(--transition-speed) ease;
+}
+
+.empty-data {
+  color: var(--empty-data-color);
+  transition: color var(--transition-speed) ease;
+}
+
+.progress-text {
+  color: var(--progress-text-color);
+  transition: color var(--transition-speed) ease;
+}
+
+.fetch-btn {
+  transition: all var(--transition-speed) ease;
+}
+
+.fetch-btn:hover {
+  transform: translateY(-2px);
+}
+
+.sub-id-filter {
+  max-width: 100%;
+  transition: all var(--transition-speed) ease;
 }
 
 /* Fix for date picker z-index issue */
@@ -455,7 +570,9 @@ const applyDateFilter = async () => {
 
 :deep(.dp__menu) {
   z-index: 100 !important;
-  background-color: white !important;
+  background-color: var(--datepicker-bg) !important;
+  color: var(--datepicker-text) !important;
+  transition: all var(--transition-speed) ease;
 }
 
 :deep(.dp__overlay) {
@@ -465,32 +582,36 @@ const applyDateFilter = async () => {
 /* Make sure the date picker input doesn't get clipped */
 :deep(.dp__input) {
   z-index: 2;
-  background-color: white !important;
+  background-color: var(--datepicker-bg) !important;
+  color: var(--datepicker-text) !important;
+  transition: all var(--transition-speed) ease;
+  border-radius: 8px;
 }
 
 /* Ensure the date picker popup has enough space */
 :deep(.dp__instance_calendar) {
   position: absolute;
   margin-top: 0;
-  background-color: white !important;
+  background-color: var(--datepicker-bg) !important;
+  transition: all var(--transition-speed) ease;
 }
 
 /* Set background color for all date picker components */
 :deep(.dp__main) {
-  background-color: white !important;
+  background-color: var(--datepicker-bg) !important;
+  transition: all var(--transition-speed) ease;
 }
 
 :deep(.dp__calendar_header) {
-  background-color: white !important;
+  background-color: var(--datepicker-bg) !important;
+  color: var(--datepicker-text) !important;
+  transition: all var(--transition-speed) ease;
 }
 
 :deep(.dp__calendar) {
-  background-color: white !important;
-}
-
-/* Max width for autocomplete */
-.max-w-md {
-  max-width: 400px;
+  background-color: var(--datepicker-bg) !important;
+  color: var(--datepicker-text) !important;
+  transition: all var(--transition-speed) ease;
 }
 
 /* Responsive adjustments */
@@ -498,6 +619,21 @@ const applyDateFilter = async () => {
   .date-range-container {
     flex-direction: column;
     align-items: flex-start;
+    width: 100%;
+  }
+  
+  .date-picker-container {
+    width: 100%;
+    margin-right: 0 !important;
+  }
+  
+  .fetch-btn {
+    width: 100%;
+    margin-top: 16px;
+  }
+  
+  .sub-id-filter {
+    width: 100%;
   }
 }
 </style>

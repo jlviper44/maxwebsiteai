@@ -1,7 +1,8 @@
 <template>
   <div class="campaign-form">
-    <v-card>
-      <v-card-title>
+    <v-card elevation="2" rounded="lg">
+      <v-card-title class="text-h5 pb-2 d-flex align-center">
+        <v-icon :icon="isEdit ? 'mdi-pencil' : 'mdi-plus-circle'" color="primary" class="mr-2"></v-icon>
         {{ isEdit ? 'Edit Campaign' : 'Create New Campaign' }}
         <v-btn
           icon 
@@ -14,158 +15,239 @@
         </v-btn>
       </v-card-title>
       
+      <v-divider></v-divider>
+      
       <v-card-text v-if="loading">
-        <div class="text-center py-4">
-          <v-progress-circular indeterminate color="primary"></v-progress-circular>
-          <p class="mt-2">{{ isEdit ? 'Loading campaign...' : 'Loading templates and stores...' }}</p>
+        <div class="text-center py-6">
+          <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
+          <p class="mt-4 text-medium-emphasis">{{ isEdit ? 'Loading campaign...' : 'Loading templates and stores...' }}</p>
         </div>
       </v-card-text>
       
-      <v-card-text v-else>
+      <v-card-text v-else class="form-content pt-4">
         <v-form ref="form" v-model="formValid" @submit.prevent="submitForm">
-          <!-- Campaign Name -->
-          <v-text-field
-            v-model="formData.campaignName"
-            label="Campaign Name"
-            :rules="[v => !!v || 'Campaign name is required']"
-            required
-          ></v-text-field>
-          
-          <!-- Shopify Store -->
-          <v-select
-            v-model="formData.shopifyStoreId"
-            :items="storeOptions"
-            item-title="text"
-            item-value="value"
-            label="Shopify Store"
-            :rules="[v => !!v || 'Shopify store is required']"
-            required
-            hint="This store will be used to create a cloaked landing page."
-            persistent-hint
-          ></v-select>
-          
-          <!-- Offer Template -->
-          <v-select
-            v-model="formData.templateId"
-            :items="templateOptions"
-            item-title="text"
-            item-value="value"
-            label="Offer Template"
-            :rules="[v => !!v || 'Template is required']"
-            required
-            hint="This template will be shown to visitors."
-            persistent-hint
-            class="mt-4"
-          ></v-select>
+          <v-row>
+            <v-col cols="12">
+              <!-- Campaign Name -->
+              <v-text-field
+                v-model="formData.campaignName"
+                label="Campaign Name"
+                :rules="[v => !!v || 'Campaign name is required']"
+                required
+                placeholder="My TikTok Campaign"
+                variant="outlined"
+                prepend-inner-icon="mdi-label-outline"
+              ></v-text-field>
+            </v-col>
+            
+            <v-col cols="12" md="6">
+              <!-- Shopify Store -->
+              <v-select
+                v-model="formData.shopifyStoreId"
+                :items="storeOptions"
+                item-title="text"
+                item-value="value"
+                label="Shopify Store"
+                :rules="[v => !!v || 'Shopify store is required']"
+                required
+                hint="This store will be used to create a cloaked landing page."
+                persistent-hint
+                variant="outlined"
+                prepend-inner-icon="mdi-shopping-outline"
+              ></v-select>
+            </v-col>
+            
+            <v-col cols="12" md="6">
+              <!-- Offer Template -->
+              <v-select
+                v-model="formData.templateId"
+                :items="templateOptions"
+                item-title="text"
+                item-value="value"
+                label="Offer Template"
+                :rules="[v => !!v || 'Template is required']"
+                required
+                hint="This template will be shown to visitors."
+                persistent-hint
+                variant="outlined"
+                prepend-inner-icon="mdi-file-document-outline"
+              ></v-select>
+            </v-col>
+          </v-row>
           
           <!-- Regional Settings -->
-          <v-card class="mt-4 mb-4">
-            <v-card-title>Regional Settings</v-card-title>
-            <v-card-subtitle>Add affiliate links for specific regions. Only regions with links will be active for this campaign.</v-card-subtitle>
+          <v-card class="mt-4 mb-4 region-card" variant="outlined">
+            <v-card-title class="text-h6 pb-2 d-flex align-center">
+              <v-icon icon="mdi-earth" color="primary" class="mr-2"></v-icon>
+              Regional Settings
+            </v-card-title>
+            
+            <v-divider></v-divider>
+            
+            <v-card-subtitle class="pt-3">
+              Add affiliate links for specific regions. Only regions with links will be active for this campaign.
+            </v-card-subtitle>
             
             <v-card-text>
-              <div 
-                v-for="region in regions" 
-                :key="region" 
-                class="geo-link-row"
-              >
-                <div class="d-flex align-center mb-2">
-                  <v-checkbox
-                    v-model="formData.geoRegions"
-                    :value="region"
-                    :label="region"
-                    hide-details
-                    @change="updateGeoLinkState(region)"
-                  ></v-checkbox>
+              <div class="region-grid">
+                <div 
+                  v-for="region in regions" 
+                  :key="region"
+                  class="region-item"
+                >
+                  <v-card variant="flat" class="region-card-inner pa-3" :class="{'region-active': formData.geoRegions.includes(region)}">
+                    <div class="d-flex align-center mb-3">
+                      <v-checkbox
+                        v-model="formData.geoRegions"
+                        :value="region"
+                        :label="region"
+                        hide-details
+                        color="primary"
+                        @change="updateGeoLinkState(region)"
+                      ></v-checkbox>
+                      <v-spacer></v-spacer>
+                      <v-chip size="small" :color="formData.geoRegions.includes(region) ? 'primary' : 'grey'" variant="elevated">
+                        {{ formData.geoRegions.includes(region) ? 'Active' : 'Inactive' }}
+                      </v-chip>
+                    </div>
+                    
+                    <v-text-field
+                      v-model="formData.geoLinks[region]"
+                      :disabled="!formData.geoRegions.includes(region)"
+                      :label="`Affiliate link for ${region}`"
+                      type="url"
+                      hint="Enter the affiliate link for this region"
+                      persistent-hint
+                      variant="outlined"
+                      density="compact"
+                      placeholder="https://example.com/affiliate"
+                      prepend-inner-icon="mdi-link-variant"
+                    ></v-text-field>
+                  </v-card>
                 </div>
-                
-                <v-text-field
-                  v-model="formData.geoLinks[region]"
-                  :disabled="!formData.geoRegions.includes(region)"
-                  :label="`Affiliate link for ${region}`"
-                  type="url"
-                  hint="Enter the affiliate link for this region"
-                  persistent-hint
-                ></v-text-field>
               </div>
             </v-card-text>
           </v-card>
           
-          <!-- Redirect Domain -->
-          <v-select
-            v-model="formData.redirectDomain"
-            :items="domainOptions"
-            label="Redirect Domain"
-            hint="Select which domain to use for redirecting traffic."
-            persistent-hint
-          ></v-select>
-          
-          <!-- Campaign Active -->
-          <v-switch
-            v-model="formData.active"
-            label="Campaign Active"
-            color="primary"
-            hint="When unchecked, the campaign will not route any traffic."
-            persistent-hint
-            class="mt-4"
-          ></v-switch>
+          <v-row>
+            <v-col cols="12" md="6">
+              <!-- Redirect Domain -->
+              <v-select
+                v-model="formData.redirectDomain"
+                :items="domainOptions"
+                label="Redirect Domain"
+                hint="Select which domain to use for redirecting traffic."
+                persistent-hint
+                variant="outlined"
+                prepend-inner-icon="mdi-web"
+              ></v-select>
+            </v-col>
+            
+            <v-col cols="12" md="6" class="d-flex align-center">
+              <!-- Campaign Active -->
+              <v-switch
+                v-model="formData.active"
+                label="Campaign Active"
+                color="primary"
+                hint="When unchecked, the campaign will not route any traffic."
+                persistent-hint
+                class="mt-4"
+              >
+                <template v-slot:prepend>
+                  <v-icon :icon="formData.active ? 'mdi-check-circle' : 'mdi-cancel'" :color="formData.active ? 'success' : 'error'" class="mr-2"></v-icon>
+                </template>
+              </v-switch>
+              
+              <v-chip
+                :color="formData.active ? 'success' : 'error'"
+                size="small"
+                variant="elevated"
+                class="ml-3"
+              >
+                {{ formData.active ? 'Active' : 'Inactive' }}
+              </v-chip>
+            </v-col>
+          </v-row>
           
           <!-- Non-TikTok Traffic Handling -->
-          <v-card class="mt-4 mb-4">
-            <v-card-title>Non-TikTok Traffic Handling</v-card-title>
+          <v-card class="mt-4 mb-4 whitehat-card" variant="outlined">
+            <v-card-title class="text-h6 pb-2 d-flex align-center">
+              <v-icon icon="mdi-earth-off" color="primary" class="mr-2"></v-icon>
+              Non-TikTok Traffic Handling
+            </v-card-title>
+            
+            <v-divider></v-divider>
             
             <v-card-text>
-              <!-- Whitehat Behavior -->
-              <v-select
-                v-model="formData.whitehatBehavior"
-                :items="whitehatBehaviorOptions"
-                label="Whitehat Behavior"
-                hint="How to handle non-TikTok traffic visiting your campaign."
-                persistent-hint
-                @update:modelValue="updateWhitehatFields"
-              ></v-select>
-              
-              <!-- Whitehat Template (conditional) -->
-              <v-select
-                v-if="showWhitehatTemplate"
-                v-model="formData.whitehatTemplateId"
-                :items="templateOptions"
-                item-title="text"
-                item-value="value"
-                label="Whitehat Template"
-                hint="This template will be shown to non-TikTok traffic."
-                persistent-hint
-                class="mt-4"
-              ></v-select>
-              
-              <!-- Whitehat URL (conditional) -->
-              <v-text-field
-                v-if="showWhitehatURL"
-                v-model="formData.whitehatURL"
-                label="Redirect URL"
-                type="url"
-                hint="Non-TikTok traffic will be redirected to this URL."
-                persistent-hint
-                class="mt-4"
-              ></v-text-field>
+              <v-row>
+                <v-col cols="12">
+                  <!-- Whitehat Behavior -->
+                  <v-select
+                    v-model="formData.whitehatBehavior"
+                    :items="whitehatBehaviorOptions"
+                    label="Whitehat Behavior"
+                    hint="How to handle non-TikTok traffic visiting your campaign."
+                    persistent-hint
+                    variant="outlined"
+                    prepend-inner-icon="mdi-traffic-light"
+                    @update:modelValue="updateWhitehatFields"
+                  ></v-select>
+                </v-col>
+                
+                <v-col cols="12" v-if="showWhitehatTemplate">
+                  <!-- Whitehat Template (conditional) -->
+                  <v-select
+                    v-model="formData.whitehatTemplateId"
+                    :items="templateOptions"
+                    item-title="text"
+                    item-value="value"
+                    label="Whitehat Template"
+                    hint="This template will be shown to non-TikTok traffic."
+                    persistent-hint
+                    variant="outlined"
+                    prepend-inner-icon="mdi-file-replace-outline"
+                  ></v-select>
+                </v-col>
+                
+                <v-col cols="12" v-if="showWhitehatURL">
+                  <!-- Whitehat URL (conditional) -->
+                  <v-text-field
+                    v-model="formData.whitehatURL"
+                    label="Redirect URL"
+                    type="url"
+                    hint="Non-TikTok traffic will be redirected to this URL."
+                    persistent-hint
+                    variant="outlined"
+                    prepend-inner-icon="mdi-link-variant"
+                    placeholder="https://example.com/redirect"
+                  ></v-text-field>
+                </v-col>
+              </v-row>
             </v-card-text>
           </v-card>
           
           <!-- Submit Buttons -->
-          <div class="d-flex mt-4">
+          <div class="d-flex mt-6 justify-center">
             <v-btn
               color="primary"
               type="submit"
               :loading="submitting"
               :disabled="!formValid"
+              variant="elevated"
+              size="large"
+              :prepend-icon="isEdit ? 'mdi-content-save' : 'mdi-plus-circle'"
+              min-width="180"
             >
               {{ isEdit ? 'Update Campaign' : 'Create Campaign' }}
             </v-btn>
             
             <v-btn
-              variant="text"
+              variant="tonal"
               to="/campaigns"
               class="ml-4"
+              size="large"
+              prepend-icon="mdi-close"
+              min-width="120"
             >
               Cancel
             </v-btn>
@@ -457,15 +539,68 @@ function showSnackbar(text, color = 'info') {
 }
 </script>
 
+<style>
+:root {
+  --form-bg: #ffffff;
+  --card-inner-bg: #f5f7fa;
+  --card-active-bg: rgba(25, 118, 210, 0.05);
+  --region-active-border: #1976d2;
+  --transition-speed: 0.3s;
+}
+
+[data-theme="dark"] {
+  --form-bg: #1e1e1e;
+  --card-inner-bg: #2d2d2d;
+  --card-active-bg: rgba(100, 181, 246, 0.1);
+  --region-active-border: #64b5f6;
+}
+</style>
+
 <style scoped>
 .campaign-form {
   padding: 16px;
 }
 
-.geo-link-row {
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 4px;
-  padding: 16px;
-  margin-bottom: 16px;
+.form-content {
+  background-color: var(--form-bg);
+  transition: background-color var(--transition-speed) ease;
+}
+
+.region-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.region-card, .whitehat-card {
+  transition: all var(--transition-speed) ease;
+}
+
+.region-card-inner {
+  background-color: var(--card-inner-bg);
+  border-radius: 8px;
+  transition: all var(--transition-speed) ease;
+  border: 2px solid transparent;
+}
+
+.region-active {
+  background-color: var(--card-active-bg);
+  border-color: var(--region-active-border);
+}
+
+@media (max-width: 600px) {
+  .region-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .d-flex.mt-6 {
+    flex-direction: column;
+  }
+  
+  .d-flex.mt-6 .v-btn {
+    width: 100%;
+    margin-left: 0 !important;
+    margin-top: 12px;
+  }
 }
 </style>
