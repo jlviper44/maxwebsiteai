@@ -16,6 +16,16 @@
         >
           <v-list nav>
             <v-list-item
+              prepend-icon="mdi-tune"
+              :active="activeTab === 'general'"
+              @click="activeTab = 'general'"
+              rounded="lg"
+              class="mb-2"
+            >
+              <v-list-item-title>General</v-list-item-title>
+            </v-list-item>
+            
+            <v-list-item
               prepend-icon="mdi-api"
               :active="activeTab === 'affluentApis'"
               @click="activeTab = 'affluentApis'"
@@ -40,6 +50,14 @@
         <!-- Content area on the right -->
         <div class="settings-content flex-grow-1">
           <v-window v-model="activeTab">
+            <!-- General Settings -->
+            <v-window-item value="general">
+              <div class="pa-6">
+                <v-breadcrumbs :items="['Settings', 'General']" class="px-0 pb-4"></v-breadcrumbs>
+                <GeneralSettings />
+              </div>
+            </v-window-item>
+            
             <!-- Affluent APIs Settings -->
             <v-window-item value="affluentApis">
               <div class="pa-6">
@@ -66,9 +84,10 @@
 import { ref } from 'vue'
 import AffluentApis from './Components/AffluentApis.vue'
 import Users from './Components/Users.vue'
+import GeneralSettings from './Components/GeneralSettings.vue'
 
 // Active tab
-const activeTab = ref('affluentApis')
+const activeTab = ref('general')
 </script>
 
 <style scoped>

@@ -4,94 +4,129 @@
       Manage your Affluent API configurations here. These credentials are used to connect with Affluent's affiliate tracking platform.
     </v-alert>
     
-    <h3 class="text-h6 mt-4 mb-3">Your Affluent API Configurations</h3>
+    <h3 class="text-h6 mt-6 mb-4">Your Affluent API Configurations</h3>
     
     <v-progress-linear v-if="loading" indeterminate color="primary"></v-progress-linear>
     
-    <v-list v-else-if="affluentApis.length > 0">
-      <v-list-item v-for="(api, index) in affluentApis" :key="index">
-        <v-list-item-title>{{ api.Name }}</v-list-item-title>
-        <template v-slot:append>
-          <v-btn
-            variant="text"
-            color="error"
-            @click="deleteApi(api)"
-          >
-            Delete
-          </v-btn>
-        </template>
-      </v-list-item>
-    </v-list>
+    <v-card variant="outlined" class="mb-6" v-else>
+      <v-list v-if="affluentApis.length > 0">
+        <v-list-item v-for="(api, index) in affluentApis" :key="index">
+          <template v-slot:prepend>
+            <v-icon color="primary">mdi-api</v-icon>
+          </template>
+          <v-list-item-title>{{ api.Name }}</v-list-item-title>
+          <template v-slot:append>
+            <v-btn
+              variant="text"
+              color="primary"
+              class="mr-2"
+              @click="editApi(api)"
+            >
+              <v-icon>mdi-pencil</v-icon>
+            </v-btn>
+            <v-btn
+              variant="text"
+              color="error"
+              @click="deleteApi(api)"
+            >
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
+          </template>
+        </v-list-item>
+      </v-list>
+      
+      <v-card-text v-else>
+        <v-alert type="warning" variant="tonal">
+          No API configurations found. Add your first configuration below.
+        </v-alert>
+      </v-card-text>
+    </v-card>
     
-    <v-alert v-else type="warning" variant="tonal">
-      No API configurations found. Add your first configuration below.
-    </v-alert>
+    <v-card variant="outlined" class="mb-6">
+      <v-card-title>{{ isEditing ? 'Edit' : 'Add' }} API Configuration</v-card-title>
+      <v-card-text>
+        <v-form @submit.prevent="saveApiConfig">
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="apiConfig.Name"
+                label="Configuration Name"
+                variant="outlined"
+                required
+                :error-messages="validationErrors.Name"
+              ></v-text-field>
+            </v-col>
+            
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="apiConfig.AFFILIATE_ID"
+                label="Affiliate ID"
+                variant="outlined"
+                required
+                :error-messages="validationErrors.AFFILIATE_ID"
+                :type="showSecrets ? 'text' : 'password'"
+                :append-icon="showSecrets ? 'mdi-eye' : 'mdi-eye-off'"
+                @click:append="showSecrets = !showSecrets"
+              ></v-text-field>
+            </v-col>
+            
+            <v-col cols="12">
+              <v-text-field
+                v-model="apiConfig.API_KEY"
+                label="API Key"
+                variant="outlined"
+                required
+                :error-messages="validationErrors.API_KEY"
+                :type="showSecrets ? 'text' : 'password'"
+              ></v-text-field>
+            </v-col>
+            
+            <v-col cols="12">
+              <v-btn 
+                type="submit" 
+                color="primary" 
+                class="mr-4"
+                :loading="submitting"
+                :disabled="submitting"
+              >
+                {{ isEditing ? 'Update' : 'Add' }} Configuration
+              </v-btn>
+              <v-btn 
+                variant="outlined"
+                @click="resetForm"
+                :disabled="submitting"
+              >
+                Cancel
+              </v-btn>
+            </v-col>
+          </v-row>
+        </v-form>
+      </v-card-text>
+    </v-card>
     
-    <v-divider class="my-4"></v-divider>
-    
-    <h3 class="text-h6 mb-3">{{ isEditing ? 'Edit' : 'Add' }} API Configuration</h3>
-    
-    <v-form @submit.prevent="saveApiConfig">
-      <v-row>
-        <v-col cols="12" md="6">
-          <v-text-field
-            v-model="apiConfig.Name"
-            label="Configuration Name"
-            variant="outlined"
-            required
-            :error-messages="validationErrors.Name"
-          ></v-text-field>
-        </v-col>
-        
-        <v-col cols="12" md="6">
-          <v-text-field
-            v-model="apiConfig.AFFILIATE_ID"
-            label="Affiliate ID"
-            variant="outlined"
-            required
-            :error-messages="validationErrors.AFFILIATE_ID"
-            type="password"
-          ></v-text-field>
-        </v-col>
-        
-        <v-col cols="12">
-          <v-text-field
-            v-model="apiConfig.API_KEY"
-            label="API Key"
-            variant="outlined"
-            required
-            :error-messages="validationErrors.API_KEY"
-          ></v-text-field>
-        </v-col>
-        
-        <v-col cols="12">
-          <v-btn 
-            type="submit" 
-            color="primary" 
-            class="mr-4"
-            :loading="submitting"
-            :disabled="submitting"
-          >
-            {{ isEditing ? 'Update' : 'Add' }} Configuration
-          </v-btn>
-          <v-btn 
-            variant="outlined"
-            @click="resetForm"
-            :disabled="submitting"
-          >
-            Cancel
-          </v-btn>
-        </v-col>
-      </v-row>
-    </v-form>
-    
-    <v-dialog v-model="dialog.show" max-width="500px">
+    <!-- Delete Confirmation Dialog -->
+    <v-dialog v-model="deleteDialog.show" max-width="500px">
       <v-card>
-        <v-card-title>{{ dialog.title }}</v-card-title>
-        <v-card-text>{{ dialog.message }}</v-card-text>
+        <v-card-title>Confirm Delete</v-card-title>
+        <v-card-text>
+          Are you sure you want to delete the "{{ deleteDialog.apiName }}" configuration? This action cannot be undone.
+        </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="primary" @click="dialog.show = false">OK</v-btn>
+          <v-btn variant="text" @click="deleteDialog.show = false">Cancel</v-btn>
+          <v-btn color="error" variant="text" @click="confirmDelete">Delete</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    
+    <!-- Message Dialog -->
+    <v-dialog v-model="messageDialog.show" max-width="500px">
+      <v-card>
+        <v-card-title>{{ messageDialog.title }}</v-card-title>
+        <v-card-text>{{ messageDialog.message }}</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="primary" @click="messageDialog.show = false">OK</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -102,60 +137,68 @@
 import { ref, computed, onMounted } from 'vue'
 
 // State management
-const affluentApis = ref([])
-const loading = ref(false)
-const submitting = ref(false)
-const isEditing = ref(false)
+const affluentApis = ref([]);
+const loading = ref(false);
+const submitting = ref(false);
+const isEditing = ref(false);
+const showSecrets = ref(false);
 
-// Form for adding/editing API configs
+// API config being edited
 const apiConfig = ref({
   Name: '',
   API_KEY: '',
   AFFILIATE_ID: ''
-})
+});
 
-const originalName = ref('')
+const originalName = ref('');
 
 // Validation errors
 const validationErrors = ref({
   Name: '',
   API_KEY: '',
   AFFILIATE_ID: ''
-})
+});
 
-// Dialog for messages
-const dialog = ref({
+// Delete confirmation dialog
+const deleteDialog = ref({
+  show: false,
+  apiName: '',
+  apiToDelete: null
+});
+
+// Message dialog
+const messageDialog = ref({
   show: false,
   title: '',
   message: ''
-})
+});
 
 // API URL base
-const API_BASE_URL = '/api/sql'
+const API_BASE_URL = '/api/sql';
 
 // Fetch API configurations from the server
 const fetchApiConfigurations = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const response = await fetch(`${API_BASE_URL}/FluentAPIs`)
+    const response = await fetch(`${API_BASE_URL}/FluentAPIs`);
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch data: ${response.status}`)
+      throw new Error(`Failed to fetch data: ${response.status}`);
     }
     
-    const result = await response.json()
+    const result = await response.json();
     
     if (result.success) {
-      affluentApis.value = result.data || []
+      affluentApis.value = result.data || [];
     } else {
-      showMessage('Error', result.error || 'Failed to load API configurations')
+      showMessage('Error', result.error || 'Failed to load API configurations');
     }
   } catch (error) {
-    showMessage('Error', `Failed to load data: ${error.message}`)
+    showMessage('Error', `Failed to load data: ${error.message}`);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Save API configuration
 const saveApiConfig = async () => {
@@ -164,31 +207,31 @@ const saveApiConfig = async () => {
     Name: '',
     API_KEY: '',
     AFFILIATE_ID: ''
-  }
+  };
   
   // Validate form
-  let isValid = true
+  let isValid = true;
   
   if (!apiConfig.value.Name) {
-    validationErrors.value.Name = 'Configuration name is required'
-    isValid = false
+    validationErrors.value.Name = 'Configuration name is required';
+    isValid = false;
   }
   
   if (!apiConfig.value.API_KEY) {
-    validationErrors.value.API_KEY = 'API key is required'
-    isValid = false
+    validationErrors.value.API_KEY = 'API key is required';
+    isValid = false;
   }
   
   if (!apiConfig.value.AFFILIATE_ID) {
-    validationErrors.value.AFFILIATE_ID = 'Affiliate ID is required'
-    isValid = false
+    validationErrors.value.AFFILIATE_ID = 'Affiliate ID is required';
+    isValid = false;
   }
   
-  if (!isValid) return
+  if (!isValid) return;
   
-  submitting.value = true
+  submitting.value = true;
   try {
-    let response
+    let response;
     
     if (isEditing.value) {
       // Update existing config using the original name as identifier
@@ -198,7 +241,7 @@ const saveApiConfig = async () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(apiConfig.value)
-      })
+      });
     } else {
       // Add new config
       response = await fetch(`${API_BASE_URL}/FluentAPIs`, {
@@ -207,67 +250,78 @@ const saveApiConfig = async () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(apiConfig.value)
-      })
+      });
     }
     
     if (!response.ok) {
-      throw new Error(`Failed to save data: ${response.status}`)
+      throw new Error(`Failed to save data: ${response.status}`);
     }
     
-    const result = await response.json()
+    const result = await response.json();
     
     if (result.success) {
       showMessage('Success', isEditing.value 
         ? 'API configuration updated successfully.' 
-        : 'API configuration added successfully.')
+        : 'API configuration added successfully.');
       
       // Refresh the configurations list
-      await fetchApiConfigurations()
+      await fetchApiConfigurations();
       
       // Reset form
-      resetForm()
+      resetForm();
     } else {
-      showMessage('Error', result.error || 'Failed to save API configuration')
+      showMessage('Error', result.error || 'Failed to save API configuration');
     }
   } catch (error) {
-    showMessage('Error', `Failed to save data: ${error.message}`)
+    showMessage('Error', `Failed to save data: ${error.message}`);
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
-}
+};
 
-// Delete API configuration
-const deleteApi = async (api) => {
-  if (confirm(`Are you sure you want to delete the "${api.Name}" configuration? This action cannot be undone.`)) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/FluentAPIs/${api.Name}?idColumn=Name`, {
-        method: 'DELETE'
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Failed to delete: ${response.status}`)
-      }
-      
-      const result = await response.json()
-      
-      if (result.success) {
-        showMessage('Success', 'API configuration deleted successfully.')
-        await fetchApiConfigurations()
-      } else {
-        showMessage('Error', result.error || 'Failed to delete API configuration')
-      }
-    } catch (error) {
-      showMessage('Error', `Failed to delete: ${error.message}`)
+// Show delete confirmation dialog
+const deleteApi = (api) => {
+  deleteDialog.value.apiName = api.Name;
+  deleteDialog.value.apiToDelete = api;
+  deleteDialog.value.show = true;
+};
+
+// Confirm delete operation
+const confirmDelete = async () => {
+  try {
+    const api = deleteDialog.value.apiToDelete;
+    if (!api) return;
+    
+    const response = await fetch(`${API_BASE_URL}/FluentAPIs/${api.Name}?idColumn=Name`, {
+      method: 'DELETE'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to delete: ${response.status}`);
     }
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      showMessage('Success', 'API configuration deleted successfully.');
+      await fetchApiConfigurations();
+    } else {
+      showMessage('Error', result.error || 'Failed to delete API configuration');
+    }
+    
+    // Close the dialog
+    deleteDialog.value.show = false;
+  } catch (error) {
+    showMessage('Error', `Failed to delete: ${error.message}`);
   }
-}
+};
 
 // Edit API configuration
 const editApi = (api) => {
-  apiConfig.value = { ...api }
-  originalName.value = api.Name
-  isEditing.value = true
-}
+  apiConfig.value = { ...api };
+  originalName.value = api.Name;
+  isEditing.value = true;
+};
 
 // Reset form
 const resetForm = () => {
@@ -275,25 +329,29 @@ const resetForm = () => {
     Name: '',
     API_KEY: '',
     AFFILIATE_ID: ''
-  }
-  originalName.value = ''
-  isEditing.value = false
+  };
+  originalName.value = '';
+  isEditing.value = false;
   validationErrors.value = {
     Name: '',
     API_KEY: '',
     AFFILIATE_ID: ''
-  }
-}
+  };
+};
 
 // Show message in dialog
 const showMessage = (title, message) => {
-  dialog.value.title = title
-  dialog.value.message = message
-  dialog.value.show = true
-}
+  messageDialog.value.title = title;
+  messageDialog.value.message = message;
+  messageDialog.value.show = true;
+};
 
 // Initialize
 onMounted(() => {
-  fetchApiConfigurations()
-})
+  fetchApiConfigurations();
+});
 </script>
+
+<style scoped>
+/* Scoped styles for the affluent APIs component */
+</style>

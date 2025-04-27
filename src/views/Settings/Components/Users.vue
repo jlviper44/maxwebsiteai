@@ -1,9 +1,13 @@
 <template>
   <div>
-    <h2 class="text-h5 mb-4">Users Management</h2>
+    <v-alert type="info" variant="tonal">
+      Manage user accounts and permissions. Users can access the admin panel based on their assigned permissions.
+    </v-alert>
+    
+    <h3 class="text-h6 mt-6 mb-4">Users Management</h3>
     
     <!-- Users List Table -->
-    <v-card class="mb-4">
+    <v-card variant="outlined" class="mb-6">
       <v-card-title class="d-flex justify-space-between align-center">
         <span>Users List</span>
         <v-btn color="primary" @click="showAddDialog">
@@ -16,22 +20,28 @@
           :headers="headers"
           :items="users"
           :loading="loading"
-          class="elevation-1"
+          class="elevation-0"
         >
           <template v-slot:item.actions="{ item }">
-            <v-icon 
-              small 
+            <v-btn
+              icon 
+              variant="text"
+              size="small"
+              color="primary"
               class="mr-2" 
               @click="editItem(item)"
             >
-              mdi-pencil
-            </v-icon>
-            <v-icon 
-              small 
+              <v-icon>mdi-pencil</v-icon>
+            </v-btn>
+            <v-btn 
+              icon
+              variant="text"
+              size="small"
+              color="error"
               @click="deleteItem(item)"
             >
-              mdi-delete
-            </v-icon>
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
           </template>
           <template v-slot:item.Permissions="{ item }">
             <div>
@@ -68,6 +78,7 @@
                     label="Name"
                     :rules="nameRules"
                     required
+                    variant="outlined"
                   ></v-text-field>
                 </v-col>
                 <v-col cols="12">
@@ -76,6 +87,7 @@
                     label="Username"
                     :rules="usernameRules"
                     required
+                    variant="outlined"
                   ></v-text-field>
                 </v-col>
                 <v-col cols="12">
@@ -87,6 +99,7 @@
                     :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
                     @click:append="showPassword = !showPassword"
                     required
+                    variant="outlined"
                   ></v-text-field>
                 </v-col>
                 <v-col cols="12">
@@ -96,8 +109,9 @@
                     label="Permissions"
                     multiple
                     chips
-                    deletable-chips
+                    closable-chips
                     required
+                    variant="outlined"
                   ></v-select>
                 </v-col>
               </v-row>
@@ -106,10 +120,10 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="blue darken-1" text @click="close">
+          <v-btn color="primary" variant="text" @click="close">
             Cancel
           </v-btn>
-          <v-btn color="blue darken-1" text @click="save" :disabled="!valid">
+          <v-btn color="primary" variant="text" @click="save" :disabled="!valid">
             Save
           </v-btn>
         </v-card-actions>
@@ -127,10 +141,10 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="blue darken-1" text @click="deleteDialog = false">
+          <v-btn color="primary" variant="text" @click="deleteDialog = false">
             Cancel
           </v-btn>
-          <v-btn color="red darken-1" text @click="confirmDelete">
+          <v-btn color="error" variant="text" @click="confirmDelete">
             Delete
           </v-btn>
         </v-card-actions>
@@ -139,16 +153,15 @@
 
     <!-- Snackbar for notifications -->
     <v-snackbar
-      v-model="snackbar"
-      :color="snackbarColor"
+      v-model="snackbar.show"
+      :color="snackbar.color"
       timeout="3000"
     >
-      {{ snackbarText }}
-      <template v-slot:action="{ attrs }">
+      {{ snackbar.text }}
+      <template v-slot:actions>
         <v-btn
           text
-          v-bind="attrs"
-          @click="snackbar = false"
+          @click="snackbar.show = false"
         >
           Close
         </v-btn>
@@ -162,12 +175,12 @@ import { ref, reactive, computed, onMounted } from 'vue';
 
 // Table headers
 const headers = [
-  { text: 'ID', value: 'ID', sortable: true },
-  { text: 'Name', value: 'Name', sortable: true },
-  { text: 'Username', value: 'Username', sortable: true },
-  { text: 'Password', value: 'Password', sortable: false },
-  { text: 'Permissions', value: 'Permissions', sortable: true },
-  { text: 'Actions', value: 'actions', sortable: false },
+  { title: 'ID', key: 'ID', sortable: true },
+  { title: 'Name', key: 'Name', sortable: true },
+  { title: 'Username', key: 'Username', sortable: true },
+  { title: 'Password', key: 'Password', sortable: false },
+  { title: 'Permissions', key: 'Permissions', sortable: true },
+  { title: 'Actions', key: 'actions', sortable: false, align: 'end' },
 ];
 
 // Data
@@ -177,11 +190,14 @@ const dialog = ref(false);
 const deleteDialog = ref(false);
 const valid = ref(true);
 const showPassword = ref(false);
-const snackbar = ref(false);
-const snackbarText = ref('');
-const snackbarColor = ref('success');
-const editedIndex = ref(-1);
 const permissionOptions = ref([]);
+
+// Snackbar
+const snackbar = ref({
+  show: false,
+  text: '',
+  color: 'success'
+});
 
 // Fetch permission options from UserPermissions table
 const fetchPermissions = async () => {
@@ -223,6 +239,7 @@ const defaultItem = {
 
 // Current edited item
 const editedItem = reactive({...defaultItem});
+const editedIndex = ref(-1);
 
 // Form title
 const formTitle = computed(() => {
@@ -350,9 +367,11 @@ const confirmDelete = async () => {
 };
 
 const showSnackbar = (text, color = 'success') => {
-  snackbarText.value = text;
-  snackbarColor.value = color;
-  snackbar.value = true;
+  snackbar.value = {
+    show: true,
+    text,
+    color
+  };
 };
 
 // Process permissions when saving
@@ -379,8 +398,12 @@ onMounted(() => {
 });
 </script>
 
-<style>
-.v-data-table-header th {
-  font-weight: bold !important;
+<style scoped>
+/* Scoped styles for the users component */
+:deep(.v-data-table-header th) {
+  font-weight: 500 !important;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.025em;
 }
 </style>
