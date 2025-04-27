@@ -1,5 +1,14 @@
 import { handleClicksRequest, handleConversionsRequest, handleSubaffiliateSummaryRequest } from './affluentEndpoint.js';
 import { handleSQLRequest, handleRawSQLRequest, handleOptions } from './SQL.js';
+import { 
+  handleCampaignsList, 
+  handleCampaignRefreshLink, 
+  handleCampaignStats, 
+  handleCampaignThresholdUpdate,
+  handleCampaignCreate,
+  handleCampaignEdit,
+  handleCampaignDelete
+} from './campaignHandler.js';
 
 export default {
 	async fetch(request, env) {
@@ -32,6 +41,35 @@ export default {
 		// Handle raw SQL queries
 		if (url.pathname === '/api/rawsql') {
 			return handleRawSQLRequest(request, env.DB);
+		}
+		
+		// Campaign management routes
+		if (url.pathname === '/api/campaigns') {
+			return handleCampaignsList(request, env);
+		}
+
+		if (url.pathname === '/api/campaigns/refresh') {
+			return handleCampaignRefreshLink(request, env);
+		}
+
+		if (url.pathname === '/api/campaigns/stats') {
+			return handleCampaignStats(request, env);
+		}
+
+		if (url.pathname === '/api/campaigns/update-threshold') {
+			return handleCampaignThresholdUpdate(request, env);
+		}
+
+		if (url.pathname === '/api/campaigns/create') {
+			return handleCampaignCreate(request, env);
+		}
+
+		if (url.pathname === '/api/campaigns/edit') {
+			return handleCampaignEdit(request, env);
+		}
+
+		if (url.pathname === '/api/campaigns/delete') {
+			return handleCampaignDelete(request, env);
 		}
 		
 		// Original API endpoint

@@ -8,7 +8,7 @@
       <v-list-item>
         <v-list-item-content>
           <v-list-item-title class="text-h6">
-            My Application
+            Campaign Manager
           </v-list-item-title>
         </v-list-item-content>
       </v-list-item>
@@ -56,12 +56,17 @@ const route = useRoute()
 
 const menuItems = [
   { title: 'Dashboard', icon: 'mdi-view-dashboard', path: '/' },
+  { title: 'Campaigns', icon: 'mdi-bullhorn', path: '/campaigns' },
   { title: 'Metrics', icon: 'mdi-chart-bar', path: '/metrics' },
   { title: 'Settings', icon: 'mdi-cog', path: '/settings' }
 ]
 
 const currentRouteName = computed(() => {
-  return route.name?.toString().charAt(0).toUpperCase() + route.name?.toString().slice(1) || 'Dashboard'
+  if (route.name === 'campaigns') return 'Campaigns';
+  if (route.name === 'campaign-create') return 'Create Campaign';
+  if (route.name === 'campaign-edit') return 'Edit Campaign';
+  if (route.name === 'campaign-stats') return 'Campaign Statistics';
+  return route.name?.toString().charAt(0).toUpperCase() + route.name?.toString().slice(1) || 'Dashboard';
 })
 </script>
 
