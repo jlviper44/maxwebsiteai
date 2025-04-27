@@ -1,40 +1,14 @@
-/**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
- */
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "maxwebsiteai",
-	"compatibility_date": "2025-04-07",
-	"main": "server/index.js",
-	"assets": {
-		"not_found_handling": "single-page-application"
-	},
-	"observability": {
-		"enabled": true
-	},
-	/**
-	 * Smart Placement
-	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
-	 */
-	// "placement": { "mode": "smart" },
-
-	/**
-	 * Bindings
-	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
-	 * databases, object storage, AI inference, real-time communication and more.
-	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
-	 */
-
-	/**
-	 * Environment Variables
-	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
-	 */
-	// "vars": { "MY_VARIABLE": "production_value" },
-	/**
-	 * Note: Use secrets to store sensitive data.
-	 * https://developers.cloudflare.com/workers/configuration/secrets/
-	 */
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "maxwebsiteai",
+  "compatibility_date": "2025-04-07",
+  "main": "server/index.js",
+  "assets": {
+    "not_found_handling": "single-page-application"
+  },
+  "observability": {
+    "enabled": true
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -42,16 +16,37 @@
       "database_id": "f41f575f-e92f-4f14-83c4-3da9b1d70f41",
       "preview_database_id": "sqldatabase"
     }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CAMPAIGNS",
+      "id": "783b3f0c106e4ed2a88edb7b671a81d2",
+      "preview_id": "CAMPAIGNS"
+    },
+    {
+      "binding": "TEMPLATES",
+      "id": "your-templates-namespace-id",
+      "preview_id": "TEMPLATES"
+    },
+    {
+      "binding": "SETTINGS",
+      "id": "6f3f7764e714434eb580d594b2f421be",
+      "preview_id": "SETTINGS"
+    },
+    {
+      "binding": "REDIRECTS",
+      "id": "dd7447a8599148e3b6f24e4bd9a924e1",
+      "preview_id": "REDIRECTS"
+    },
+    {
+      "binding": "SHOPIFY_STORES",
+      "id": "32c846fa6f1448919b2190c9145c882b",
+      "preview_id": "SHOPIFY_STORES"
+    },
+    {
+      "binding": "STATS",
+      "id": "3ffb301c9c894c6c9b662d5387210a5c",
+      "preview_id": "STATS"
+    }
   ]
-	/**
-	 * Static Assets
-	 * https://developers.cloudflare.com/workers/static-assets/binding/
-	 */
-	// "assets": { "directory": "./public/", "binding": "ASSETS" },
-
-	/**
-	 * Service Bindings (communicate between multiple Workers)
-	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
-	 */
-	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
 }
