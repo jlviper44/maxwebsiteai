@@ -3,6 +3,8 @@ import Dashboard from '@/views/Dashboard.vue'
 import CampaignsView from '@/views/Campaigns/CampaignsView.vue'
 import CampaignStats from '@/views/Campaigns/CampaignStats.vue'
 import CampaignForm from '@/views/Campaigns/CampaignForm.vue'
+import TemplatesView from '@/views/Templates/TemplatesView.vue'
+import TemplateForm from '@/views/Templates/TemplateForm.vue'
 import Metrics from '@/views/Metrics/Metrics.vue'
 import Settings from '@/views/Settings/Settings.vue'
 
@@ -31,6 +33,21 @@ const routes = [
     path: '/campaigns/stats/:id',
     name: 'campaign-stats',
     component: CampaignStats
+  },
+  {
+    path: '/templates',
+    name: 'templates',
+    component: TemplatesView
+  },
+  {
+    path: '/templates/create',
+    name: 'template-create',
+    component: TemplateForm
+  },
+  {
+    path: '/templates/edit/:id',
+    name: 'template-edit',
+    component: TemplateForm
   },
   {
     path: '/metrics',

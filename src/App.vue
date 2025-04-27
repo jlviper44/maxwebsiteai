@@ -57,6 +57,7 @@ const route = useRoute()
 const menuItems = [
   { title: 'Dashboard', icon: 'mdi-view-dashboard', path: '/' },
   { title: 'Campaigns', icon: 'mdi-bullhorn', path: '/campaigns' },
+  { title: 'Templates', icon: 'mdi-file-document-outline', path: '/templates' },
   { title: 'Metrics', icon: 'mdi-chart-bar', path: '/metrics' },
   { title: 'Settings', icon: 'mdi-cog', path: '/settings' }
 ]
@@ -66,6 +67,9 @@ const currentRouteName = computed(() => {
   if (route.name === 'campaign-create') return 'Create Campaign';
   if (route.name === 'campaign-edit') return 'Edit Campaign';
   if (route.name === 'campaign-stats') return 'Campaign Statistics';
+  if (route.name === 'templates') return 'Templates';
+  if (route.name === 'template-create') return 'Create Template';
+  if (route.name === 'template-edit') return 'Edit Template';
   return route.name?.toString().charAt(0).toUpperCase() + route.name?.toString().slice(1) || 'Dashboard';
 })
 </script>

@@ -9,6 +9,14 @@ import {
   handleCampaignEdit,
   handleCampaignDelete
 } from './campaignHandler.js';
+import {
+  handleTemplatesList,
+  handleTemplateDetail,
+  handleTemplateCreate,
+  handleTemplateEdit,
+  handleTemplateDelete,
+  handleTemplateUsageCheck
+} from './templatesHandler.js';
 
 export default {
 	async fetch(request, env) {
@@ -70,6 +78,31 @@ export default {
 
 		if (url.pathname === '/api/campaigns/delete') {
 			return handleCampaignDelete(request, env);
+		}
+		
+		// Template management routes
+		if (url.pathname === '/api/templates') {
+			return handleTemplatesList(request, env);
+		}
+		
+		if (url.pathname === '/api/templates/detail') {
+			return handleTemplateDetail(request, env);
+		}
+		
+		if (url.pathname === '/api/templates/create') {
+			return handleTemplateCreate(request, env);
+		}
+		
+		if (url.pathname === '/api/templates/edit') {
+			return handleTemplateEdit(request, env);
+		}
+		
+		if (url.pathname === '/api/templates/delete') {
+			return handleTemplateDelete(request, env);
+		}
+		
+		if (url.pathname === '/api/templates/usage') {
+			return handleTemplateUsageCheck(request, env);
 		}
 		
 		// Original API endpoint
