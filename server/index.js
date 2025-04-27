@@ -26,6 +26,10 @@ import {
   handleShopifyStoreDelete,
   handleShopifyStoreUsageCheck
 } from './shopifyHandler.js';
+import {
+  handleDashboardData,
+  handleSettingsUpdate
+} from './dashboardHandler.js';
 
 export default {
 	async fetch(request, env) {
@@ -58,6 +62,15 @@ export default {
 		// Handle raw SQL queries
 		if (url.pathname === '/api/rawsql') {
 			return handleRawSQLRequest(request, env.DB);
+		}
+		
+		// Dashboard routes
+		if (url.pathname === '/api/dashboard') {
+			return handleDashboardData(request, env);
+		}
+		
+		if (url.pathname === '/api/settings/update') {
+			return handleSettingsUpdate(request, env);
 		}
 		
 		// Campaign management routes

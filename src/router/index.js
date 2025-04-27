@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Dashboard from '@/views/Dashboard.vue'
+import Dashboard from '@/views/Dashboard/Dashboard.vue'
 import CampaignsView from '@/views/Campaigns/CampaignsView.vue'
 import CampaignStats from '@/views/Campaigns/CampaignStats.vue'
 import CampaignForm from '@/views/Campaigns/CampaignForm.vue'
